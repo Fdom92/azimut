@@ -28,9 +28,9 @@
       <span class="tile-name">Orientación</span>
       <span class="tile-desc">Encontrar el norte sin brújula</span>
     </button>
-    <button class="tile" disabled>
+    <button class="tile" data-tool="knots">
       <span class="tile-name">Nudos</span>
-      <span class="tile-desc">Próximamente</span>
+      <span class="tile-desc">Encordamiento, unión y bloqueo</span>
     </button>
     <button class="tile" data-tool="distress">
       <span class="tile-name">Socorro</span>
@@ -158,6 +158,15 @@
     <div id="sign-list"></div>
 
     <p class="hint" id="weather-source"></p>
+  </section>
+
+  <section id="knots" class="panel" hidden>
+    <h2>Nudos</h2>
+    <p class="lead">
+      Agrupados por para qué sirven, que es como se busca uno en el momento.
+    </p>
+    <p class="notice" id="knots-progress"></p>
+    <div id="knot-list"></div>
   </section>
 </main>
 

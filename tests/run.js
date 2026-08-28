@@ -41,6 +41,14 @@ import {
 } from "../public/js/data/signals.js";
 
 import { CLOUDS, LEVELS } from "../public/js/data/clouds.js";
+
+import { KNOTS, GROUPS } from "../public/js/data/knots.js";
+import {
+  knotsByGroup,
+  isComplete,
+  missingParts,
+  IMAGE_FIELDS,
+} from "../public/js/modules/knots.js";
 import {
   cloudsByLevel,
   cloudsBySeverity,
@@ -382,6 +390,77 @@ test("weather: exactly one cloud is marked as demanding immediate action", () =>
 test("weather: the module cites its source", () => {
   assert(source().url.startsWith("https://"), "source needs a URL");
   assert(source().label.length > 0, "source needs a label");
+});
+
+// ---- Knots ----
+//
+// The safety-critical fields (steps, image) are filled from a source rather
+// than from memory, so these tests guard the discipline around them: nothing
+// claims to be finished before it is, and no image can arrive without the
+// attribution its licence requires.
+
+test("knots: ids are unique", () => {
+  const ids = KNOTS.map((k) => k.id);
+  assertEqual(new Set(ids).size, ids.length, "duplicated knot id");
+});
+
+test("knots: every knot belongs to a declared group", () => {
+  const groups = Object.keys(GROUPS);
+  for (const knot of KNOTS) {
+    assert(groups.includes(knot.group), `${knot.id}: grupo desconocido "${knot.group}"`);
+  }
+});
+
+test("knots: descriptive fields are filled in", () => {
+  for (const knot of KNOTS) {
+    for (const field of ["name", "use", "characteristics"]) {
+      assert(
+        typeof knot[field] === "string" && knot[field].trim().length > 0,
+        `${knot.id}: campo "${field}" vacío`
+      );
+    }
+    assert(Array.isArray(knot.warnings), `${knot.id}: warnings debe ser array`);
+    assert(Array.isArray(knot.steps), `${knot.id}: steps debe ser array`);
+    assertEqual(typeof knot.reviewed, "boolean", `${knot.id}: reviewed debe ser booleano`);
+  }
+});
+
+test("knots: an image cannot be added without full attribution", () => {
+  for (const knot of KNOTS) {
+    if (knot.image == null) continue;
+    for (const field of IMAGE_FIELDS) {
+      assert(
+        typeof knot.image[field] === "string" && knot.image[field].trim().length > 0,
+        `${knot.id}: la imagen no declara "${field}" — la licencia lo exige`
+      );
+    }
+  }
+});
+
+test("knots: nothing is marked reviewed while its steps or image are missing", () => {
+  for (const knot of KNOTS) {
+    if (!knot.reviewed) continue;
+    assert(knot.steps.length > 0, `${knot.id}: marcado revisado sin pasos`);
+    assert(knot.image != null, `${knot.id}: marcado revisado sin ilustración`);
+  }
+});
+
+test("knots: grouping keeps every knot and invents none", () => {
+  const grouped = knotsByGroup().flatMap((group) => group.knots);
+  assertEqual(grouped.length, KNOTS.length, "un nudo se ha perdido o duplicado al agrupar");
+});
+
+test("knots: missingParts names exactly what an entry still lacks", () => {
+  const bare = { steps: [], image: null, reviewed: false };
+  assertEqual(missingParts(bare).join(","), "pasos,ilustración,revisión");
+
+  const halfway = { steps: ["uno"], image: { file: "x.svg" }, reviewed: false };
+  assertEqual(missingParts(halfway).join(","), "revisión");
+  assert(!isComplete(halfway), "no está completo hasta que se revisa");
+
+  const done = { steps: ["uno"], image: { file: "x.svg" }, reviewed: true };
+  assertEqual(missingParts(done).length, 0);
+  assert(isComplete(done));
 });
 
 // Ephemeris cross-check.

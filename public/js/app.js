@@ -17,6 +17,12 @@ import {
   source,
   SEVERITY_LABEL,
 } from "./modules/weather.js";
+import {
+  knotsByGroup,
+  missingParts,
+  imageAttribution,
+  progress,
+} from "./modules/knots.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -477,6 +483,104 @@ sourceLink.href = source().url;
 sourceLink.textContent = source().label;
 sourceLink.rel = "noopener noreferrer";
 sourceEl.append("Clasificación según ", sourceLink, ".");
+
+// ---- Knots ----
+//
+// Entries are shown with what they are still missing rather than hidden, so
+// the gap stays visible instead of quietly looking finished.
+
+const knotList = document.getElementById("knot-list");
+
+function knotCard(knot) {
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const head = document.createElement("div");
+  head.className = "cloud-head";
+
+  const name = document.createElement("h4");
+  name.textContent = knot.name;
+  head.append(name);
+
+  const pending = missingParts(knot);
+  if (pending.length > 0) {
+    const badge = document.createElement("span");
+    badge.className = "badge pending";
+    badge.textContent = `Falta: ${pending.join(", ")}`;
+    head.append(badge);
+  }
+  card.append(head);
+
+  if (knot.aka.length > 0) {
+    const aka = document.createElement("p");
+    aka.className = "hint";
+    aka.style.marginTop = "0";
+    aka.textContent = `También: ${knot.aka.join(", ")}`;
+    card.append(aka);
+  }
+
+  const use = document.createElement("p");
+  use.textContent = knot.use;
+  card.append(use);
+
+  const characteristics = document.createElement("p");
+  characteristics.className = "muted";
+  characteristics.textContent = knot.characteristics;
+  card.append(characteristics);
+
+  if (knot.image) {
+    const figure = document.createElement("figure");
+    const img = document.createElement("img");
+    img.src = `img/knots/${knot.image.file}`;
+    img.alt = `Diagrama del ${knot.name}`;
+    img.loading = "lazy";
+    const caption = document.createElement("figcaption");
+    caption.textContent = imageAttribution(knot.image);
+    figure.append(img, caption);
+    card.append(figure);
+  }
+
+  if (knot.steps.length > 0) {
+    const steps = document.createElement("ol");
+    steps.className = "steps";
+    for (const step of knot.steps) {
+      const li = document.createElement("li");
+      li.textContent = step;
+      steps.append(li);
+    }
+    card.append(steps);
+  }
+
+  for (const warning of knot.warnings) {
+    const p = document.createElement("p");
+    p.className = "warning";
+    p.textContent = warning;
+    card.append(p);
+  }
+
+  return card;
+}
+
+const { done, total } = progress();
+const progressEl = document.getElementById("knots-progress");
+progressEl.textContent =
+  done === total
+    ? `Los ${total} nudos están ilustrados y revisados.`
+    : `${done} de ${total} nudos completos. Los pasos y las ilustraciones se sacan de una fuente y los revisa una persona antes de darlos por buenos — un diagrama mal enseña un nudo distinto al que dice.`;
+
+knotList.replaceChildren();
+for (const group of knotsByGroup()) {
+  const heading = document.createElement("h4");
+  heading.className = "group-heading";
+  heading.textContent = group.label;
+
+  const description = document.createElement("p");
+  description.className = "hint";
+  description.style.margin = "0 0 12px";
+  description.textContent = group.description;
+
+  knotList.append(heading, description, ...group.knots.map(knotCard));
+}
 
 renderSaved();
 
