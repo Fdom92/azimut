@@ -24,17 +24,17 @@
       <span class="tile-name">Sol y luna</span>
       <span class="tile-desc">Orto, ocaso, crepúsculos y hora dorada</span>
     </button>
-    <button class="tile" disabled>
+    <button class="tile" data-tool="orient">
       <span class="tile-name">Orientación</span>
-      <span class="tile-desc">Próximamente</span>
+      <span class="tile-desc">Encontrar el norte sin brújula</span>
     </button>
     <button class="tile" disabled>
       <span class="tile-name">Nudos</span>
       <span class="tile-desc">Próximamente</span>
     </button>
-    <button class="tile" disabled>
+    <button class="tile" data-tool="distress">
       <span class="tile-name">Socorro</span>
-      <span class="tile-desc">Próximamente</span>
+      <span class="tile-desc">Señal alpina, SOS y símbolos</span>
     </button>
     <button class="tile" disabled>
       <span class="tile-name">Meteo</span>
@@ -77,7 +77,65 @@
 
     <div id="sun-result" class="result" hidden></div>
   </section>
+
+  <section id="orient" class="panel" hidden>
+    <h2>Orientación</h2>
+    <p class="lead">
+      Los tres primeros métodos no necesitan el móvil encendido — que es
+      justo cuando hacen falta. Usa la posición y la fecha de Sol y luna.
+    </p>
+    <div id="orient-result" class="result"></div>
+
+    <div class="card">
+      <h3>Brújula del dispositivo</h3>
+      <p class="hint">
+        Secundaria, nunca la base: pierde precisión cerca de metal o
+        electrónica y el soporte varía mucho entre dispositivos.
+      </p>
+      <button type="button" id="compass-start">Activar brújula</button>
+      <p id="compass-reading" class="reading">—</p>
+    </div>
+  </section>
+
+  <section id="distress" class="panel" hidden>
+    <h2>Señales de socorro</h2>
+
+    <div class="card warn">
+      <p><strong>El destello de pantalla consume batería muy rápido.</strong>
+      Con una emergencia en curso, la batería es lo que te comunica. Usa el
+      silbato o el sonido antes que la pantalla, y no la dejes destellando
+      más de lo necesario.</p>
+    </div>
+
+    <div class="card">
+      <h3>Emitir</h3>
+      <div class="row">
+        <label for="pattern">Patrón</label>
+        <select id="pattern"></select>
+      </div>
+      <p id="pattern-desc" class="hint"></p>
+      <div class="actions">
+        <button type="button" id="signal-start">Empezar</button>
+        <button type="button" id="signal-stop" disabled>Parar</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="use-screen"> Destello de pantalla
+      </label>
+      <label class="check">
+        <input type="checkbox" id="use-audio" checked> Sonido
+      </label>
+    </div>
+
+    <h3>Símbolos tierra-aire</h3>
+    <p class="hint">Grandes, en terreno abierto, con lo que contraste: material, piedras, nieve pisada.</p>
+    <ul id="ground-signals" class="events"></ul>
+
+    <h3>Códigos de silbato</h3>
+    <ul id="whistle-codes" class="events"></ul>
+  </section>
 </main>
+
+<div id="strobe" hidden></div>
 
 <footer>
   <p>Cálculo solar según Meeus / NOAA. <a href="https://github.com/Fdom92/azimut">Código</a>.</p>

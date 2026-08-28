@@ -1,5 +1,14 @@
-import { sunReport, formatTime, formatDuration } from "./modules/sunMoon.js";
+import { sunReport, formatTime, formatDuration, compassPoint } from "./modules/sunMoon.js";
 import { listLocations, saveLocation, deleteLocation } from "./store.js";
+import {
+  shadowMethod,
+  watchMethod,
+  polarisMethod,
+  magneticToTrue,
+} from "./astro/orientation.js";
+import { playSchedule, createTone, PATTERNS } from "./modules/distress.js";
+import { GROUND_SIGNALS, WHISTLE_CODES } from "./data/signals.js";
+import { region } from "./data/regions/iberia.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -28,9 +37,16 @@ function showHome() {
 }
 
 for (const tile of document.querySelectorAll(".tile[data-tool]")) {
-  tile.addEventListener("click", () => showTool(tile.dataset.tool));
+  tile.addEventListener("click", () => {
+    showTool(tile.dataset.tool);
+    if (tile.dataset.tool === "orient") renderOrientation();
+  });
 }
-backBtn.addEventListener("click", showHome);
+
+backBtn.addEventListener("click", () => {
+  stopSignal();
+  showHome();
+});
 
 // ---- Sun and moon ----
 
@@ -167,6 +183,196 @@ function showError(message) {
   p.className = "notice error";
   p.textContent = message;
   resultEl.replaceChildren(p);
+}
+
+// ---- Orientation ----
+
+const orientResult = document.getElementById("orient-result");
+const compassReading = document.getElementById("compass-reading");
+
+function currentPosition() {
+  const lat = Number(latInput.value);
+  const lon = Number(lonInput.value);
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+}
+
+function renderOrientation() {
+  const position = currentPosition();
+  orientResult.replaceChildren();
+
+  if (!position) {
+    const p = document.createElement("p");
+    p.className = "notice";
+    p.textContent =
+      "Introduce una posición en Sol y luna primero — los métodos solares la necesitan.";
+    orientResult.append(p);
+    return;
+  }
+
+  const now = new Date();
+  const shadow = shadowMethod(now, position.lat, position.lon);
+  const watch = watchMethod(now, position.lat, position.lon);
+  const polaris = polarisMethod(position.lat);
+
+  orientResult.append(
+    methodCard(
+      "Palo y sombra",
+      shadow.usable
+        ? `El sol está a ${shadow.sunAzimuth.toFixed(0)}° (${compassPoint(shadow.sunAzimuth)}), ${shadow.sunAltitude.toFixed(0)}° sobre el horizonte. La sombra de cualquier objeto vertical apunta a ${shadow.shadowPointsTo.toFixed(0)}° (${compassPoint(shadow.shadowPointsTo)}).`
+        : "El sol está demasiado bajo ahora mismo: la sombra se alarga y la dirección deja de ser fiable. Espera a que suba más de 5°."
+    ),
+    methodCard(
+      "Método del reloj",
+      watch.usable
+        ? `Pon el reloj plano y la aguja horaria apuntando al sol. La bisectriz entre esa aguja y las 12 marca el ${watch.bisectorCardinal === "S" ? "sur" : "norte"}. Ojo: usa la hora solar, no la del móvil — en España el reloj va muy por delante del sol y es donde falla la versión clásica del truco.`
+        : "El sol está demasiado bajo para este método ahora mismo."
+    ),
+    methodCard(
+      "La Polar",
+      polaris.visible
+        ? `${polaris.pointerInstruction} Comprobación: la Polar debe quedar a unos ${polaris.expectedAltitude.toFixed(0)}° sobre el horizonte, que es tu latitud. Si no cuadra, no es esa estrella.`
+        : "Desde el hemisferio sur la Polar no se ve. Usa la Cruz del Sur."
+    )
+  );
+}
+
+function methodCard(title, body) {
+  const card = document.createElement("div");
+  card.className = "card";
+  const h = document.createElement("h3");
+  h.textContent = title;
+  const p = document.createElement("p");
+  p.textContent = body;
+  card.append(h, p);
+  return card;
+}
+
+document.getElementById("compass-start").addEventListener("click", async () => {
+  const Sensor = window.DeviceOrientationEvent;
+  if (!Sensor) {
+    compassReading.textContent = "Este dispositivo no expone orientación.";
+    return;
+  }
+  if (typeof Sensor.requestPermission === "function") {
+    try {
+      const granted = await Sensor.requestPermission();
+      if (granted !== "granted") {
+        compassReading.textContent = "Permiso denegado.";
+        return;
+      }
+    } catch {
+      compassReading.textContent = "No se pudo pedir permiso de orientación.";
+      return;
+    }
+  }
+  window.addEventListener("deviceorientationabsolute", onHeading);
+  window.addEventListener("deviceorientation", onHeading);
+});
+
+function onHeading(event) {
+  const magnetic =
+    event.webkitCompassHeading ??
+    (event.absolute && event.alpha != null ? 360 - event.alpha : null);
+  if (magnetic == null) {
+    compassReading.textContent =
+      "El dispositivo entrega orientación relativa, no absoluta: no sirve como brújula.";
+    return;
+  }
+  const declination = region.magneticDeclination.approxDegrees;
+  const trueHeading = magneticToTrue(magnetic, declination);
+  compassReading.textContent =
+    `${trueHeading.toFixed(0)}° (${compassPoint(trueHeading)}) respecto al norte geográfico — ` +
+    `declinación aplicada ${declination}°, aproximada para la península.`;
+}
+
+// ---- Distress ----
+
+const patternSelect = document.getElementById("pattern");
+const patternDesc = document.getElementById("pattern-desc");
+const strobe = document.getElementById("strobe");
+const startBtn = document.getElementById("signal-start");
+const stopBtn = document.getElementById("signal-stop");
+
+let stopFn = null;
+let tone = null;
+
+for (const [key, pattern] of Object.entries(PATTERNS)) {
+  const option = document.createElement("option");
+  option.value = key;
+  option.textContent = pattern.label;
+  patternSelect.append(option);
+}
+
+function describePattern() {
+  patternDesc.textContent = PATTERNS[patternSelect.value].description;
+}
+patternSelect.addEventListener("change", describePattern);
+describePattern();
+
+startBtn.addEventListener("click", async () => {
+  stopSignal();
+
+  const useScreen = document.getElementById("use-screen").checked;
+  const useAudio = document.getElementById("use-audio").checked;
+  if (!useScreen && !useAudio) {
+    patternDesc.textContent = "Elige al menos un emisor: pantalla o sonido.";
+    return;
+  }
+
+  if (useAudio) {
+    tone = createTone();
+    await tone?.resume();
+  }
+  if (useScreen) strobe.hidden = false;
+
+  const steps = PATTERNS[patternSelect.value].steps();
+  stopFn = playSchedule(steps, {
+    onState: (on) => {
+      if (useScreen) strobe.classList.toggle("on", on);
+      if (useAudio) tone?.set(on);
+    },
+  });
+
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+});
+
+stopBtn.addEventListener("click", stopSignal);
+
+function stopSignal() {
+  stopFn?.();
+  stopFn = null;
+  tone?.close();
+  tone = null;
+  strobe.hidden = true;
+  strobe.classList.remove("on");
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+}
+
+// Never leave a strobe or a tone running in a background tab.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopSignal();
+});
+
+fillList("ground-signals", GROUND_SIGNALS, (s) => [s.symbol, s.meaning]);
+fillList("whistle-codes", WHISTLE_CODES, (c) => [c.blasts, c.meaning]);
+
+function fillList(id, items, project) {
+  const list = document.getElementById(id);
+  list.replaceChildren(
+    ...items.map((item) => {
+      const [left, right] = project(item);
+      const li = document.createElement("li");
+      const a = document.createElement("span");
+      a.className = "signal-key";
+      a.textContent = left;
+      const b = document.createElement("span");
+      b.textContent = right;
+      li.append(a, b);
+      return li;
+    })
+  );
 }
 
 renderSaved();

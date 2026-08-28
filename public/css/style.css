@@ -226,3 +226,67 @@ footer {
 }
 
 footer a { color: var(--accent); }
+
+.lead { color: var(--muted); margin-top: 0; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card h3 { margin: 0 0 8px; font-size: 15px; }
+.card p { margin: 0 0 8px; }
+.card p:last-child { margin-bottom: 0; }
+
+.card.warn { border-color: var(--danger); }
+.card.warn strong { color: var(--danger); }
+
+select {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--text);
+}
+
+.check input { width: auto; }
+
+.reading {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-key {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 5.5em;
+}
+
+button:disabled { opacity: 0.45; cursor: default; }
+
+/* Full-screen strobe. Black by default so a stray tap does not blind anyone;
+   the .on class is what actually flashes. */
+#strobe {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100;
+}
+
+#strobe.on { background: #fff; }

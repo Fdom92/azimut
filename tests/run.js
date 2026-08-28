@@ -23,6 +23,23 @@ import {
   dayLengthMinutes,
 } from "../public/js/astro/solar.js";
 
+import {
+  shadowAzimuth,
+  shadowMethod,
+  watchMethod,
+  polarisMethod,
+  magneticToTrue,
+  trueToMagnetic,
+  bearingDelta,
+} from "../public/js/astro/orientation.js";
+
+import {
+  sosSchedule,
+  alpineSchedule,
+  scheduleDurationMs,
+  ALPINE,
+} from "../public/js/data/signals.js";
+
 // Reference sites. Longitude is positive east.
 const MADRID = { lat: 40.4168, lon: -3.7038 };
 const SYDNEY = { lat: -33.8688, lon: 151.2093 };
@@ -214,6 +231,99 @@ test("solar: altitude is near zero at the moment of sunrise and sunset", () => {
     const { altitude } = solarPosition(when, MADRID.lat, MADRID.lon);
     assertClose(altitude, -0.833, 0.2, `altitude at ${name}`);
   }
+});
+
+// ---- Orientation ----
+
+test("orient: a shadow falls exactly opposite the sun", () => {
+  for (const azimuth of [0, 45, 179, 180, 181, 359.5]) {
+    assertClose(shadowAzimuth(azimuth), (azimuth + 180) % 360, 1e-9);
+  }
+});
+
+test("orient: at northern solar noon the shadow points due north", () => {
+  const t = sunTimes(new Date("2026-08-28T00:00:00Z"), MADRID.lat, MADRID.lon);
+  const { shadowPointsTo } = shadowMethod(t.solarNoon, MADRID.lat, MADRID.lon);
+  const fromNorth = Math.min(shadowPointsTo, 360 - shadowPointsTo);
+  assertClose(fromNorth, 0, 0.5, "shadow bearing at Madrid solar noon");
+});
+
+test("orient: at southern solar noon the shadow points due south", () => {
+  const t = sunTimes(new Date("2026-08-28T00:00:00Z"), SYDNEY.lat, SYDNEY.lon);
+  const { shadowPointsTo } = shadowMethod(t.solarNoon, SYDNEY.lat, SYDNEY.lon);
+  assertClose(shadowPointsTo, 180, 0.5, "shadow bearing at Sydney solar noon");
+});
+
+test("orient: the shadow method is unusable with the sun near the horizon", () => {
+  const t = sunTimes(new Date("2026-08-28T00:00:00Z"), MADRID.lat, MADRID.lon);
+  assert(!shadowMethod(t.sunrise, MADRID.lat, MADRID.lon).usable, "unusable at sunrise");
+  assert(shadowMethod(t.solarNoon, MADRID.lat, MADRID.lon).usable, "usable at noon");
+});
+
+test("orient: the watch bisector lands on the meridian for each hemisphere", () => {
+  const noon = sunTimes(new Date("2026-08-28T00:00:00Z"), MADRID.lat, MADRID.lon).solarNoon;
+  const north = watchMethod(noon, MADRID.lat, MADRID.lon);
+  const south = watchMethod(noon, SYDNEY.lat, SYDNEY.lon);
+  assertEqual(north.bisectorCardinal, "S");
+  assertEqual(south.bisectorCardinal, "N");
+});
+
+test("orient: Polaris sits at an altitude equal to your latitude", () => {
+  assertClose(polarisMethod(40.4168).expectedAltitude, 40.4168, 1e-9);
+  assert(!polarisMethod(-33.87).visible, "not visible from the southern hemisphere");
+});
+
+test("orient: magnetic and true bearings round-trip through declination", () => {
+  for (const declination of [-8, -1, 0, 3.5, 12]) {
+    for (const heading of [0, 90, 187.4, 359]) {
+      const trueBearing = magneticToTrue(heading, declination);
+      assertClose(trueToMagnetic(trueBearing, declination), heading, 1e-9);
+    }
+  }
+});
+
+test("orient: bearing delta takes the short way around the compass", () => {
+  assertClose(bearingDelta(350, 10), 20, 1e-9);
+  assertClose(bearingDelta(10, 350), 20, 1e-9);
+  assertClose(bearingDelta(0, 180), 180, 1e-9);
+  assertClose(bearingDelta(90, 90), 0, 1e-9);
+});
+
+// ---- Distress signalling ----
+
+test("signals: SOS is one prosign — nine elements, eight gaps, no letter breaks", () => {
+  const steps = sosSchedule(200);
+  assertEqual(steps.filter((s) => s.on).length, 9, "nine keyed elements");
+  assertEqual(steps.filter((s) => !s.on).length, 8, "eight intra-symbol gaps");
+});
+
+test("signals: SOS timing is 15 units keyed plus 8 units of gap", () => {
+  const steps = sosSchedule(200);
+  const on = steps.filter((s) => s.on).reduce((sum, s) => sum + s.ms, 0);
+  const off = steps.filter((s) => !s.on).reduce((sum, s) => sum + s.ms, 0);
+  assertEqual(on, 15 * 200, "three dots, three dashes, three dots");
+  assertEqual(off, 8 * 200);
+  assertEqual(scheduleDurationMs(steps), 23 * 200);
+});
+
+test("signals: the alpine distress signal is six inside one minute", () => {
+  const steps = alpineSchedule(ALPINE.distress, 500);
+  assertEqual(steps.filter((s) => s.on).length, 6);
+  const spacing = steps[0].ms + steps[1].ms;
+  assertEqual(spacing, 10000, "one signal every ten seconds");
+});
+
+test("signals: the acknowledgement is three inside one minute", () => {
+  const steps = alpineSchedule(ALPINE.answer, 500);
+  assertEqual(steps.filter((s) => s.on).length, 3);
+  assertEqual(steps[0].ms + steps[1].ms, 20000, "one signal every twenty seconds");
+});
+
+test("signals: each round is followed by a full minute of silence", () => {
+  const steps = alpineSchedule(ALPINE.distress, 500);
+  const last = steps[steps.length - 1];
+  assertEqual(last.on, false);
+  assertEqual(last.ms, 60000);
 });
 
 // Ephemeris cross-check.
