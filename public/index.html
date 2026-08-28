@@ -36,9 +36,9 @@
       <span class="tile-name">Socorro</span>
       <span class="tile-desc">Señal alpina, SOS y símbolos</span>
     </button>
-    <button class="tile" disabled>
+    <button class="tile" data-tool="weather">
       <span class="tile-name">Meteo</span>
-      <span class="tile-desc">Próximamente</span>
+      <span class="tile-desc">Leer las nubes y qué anuncian</span>
     </button>
     <button class="tile" disabled>
       <span class="tile-name">Naturaleza</span>
@@ -132,6 +132,32 @@
 
     <h3>Códigos de silbato</h3>
     <ul id="whistle-codes" class="events"></ul>
+  </section>
+
+  <section id="weather" class="panel" hidden>
+    <h2>Señales de meteo</h2>
+    <p class="lead">
+      Indicadores empíricos, no predicción. Han aguantado bien en el flujo
+      del oeste de latitudes medias, que es donde está la península — pero
+      leen tendencias, no dan certezas.
+    </p>
+
+    <div class="card warn">
+      <h3>Tormenta: qué hacer</h3>
+      <ol id="storm-actions"></ol>
+    </div>
+
+    <h3>Nubes</h3>
+    <div class="actions" role="group" aria-label="Ordenar nubes">
+      <button type="button" id="by-level" class="toggle active">Por altura</button>
+      <button type="button" id="by-severity" class="toggle">Por gravedad</button>
+    </div>
+    <div id="cloud-list"></div>
+
+    <h3>Otras señales</h3>
+    <div id="sign-list"></div>
+
+    <p class="hint" id="weather-source"></p>
   </section>
 </main>
 

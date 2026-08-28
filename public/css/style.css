@@ -290,3 +290,43 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 
 #strobe.on { background: #fff; }
+
+.group-heading {
+  margin: 20px 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.cloud-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.card h4 { margin: 0 0 8px; font-size: 15px; }
+.cloud-head h4 { margin: 0; }
+.card .muted { color: var(--muted); }
+
+.badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.badge.watch { border-color: var(--accent); color: var(--accent); }
+.badge.caution { border-color: #d9a441; color: #d9a441; }
+.badge.danger { border-color: var(--danger); color: var(--danger); }
+
+.toggle { font-size: 14px; }
+.toggle.active { border-color: var(--accent); color: var(--accent); }
+
+.card.warn ol { margin: 0; padding-left: 20px; }
+.card.warn li { margin-bottom: 6px; }
+.card.warn li:last-child { margin-bottom: 0; }

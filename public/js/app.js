@@ -9,6 +9,14 @@ import {
 import { playSchedule, createTone, PATTERNS } from "./modules/distress.js";
 import { GROUND_SIGNALS, WHISTLE_CODES } from "./data/signals.js";
 import { region } from "./data/regions/iberia.js";
+import {
+  cloudsByLevel,
+  cloudsBySeverity,
+  signs,
+  stormActions,
+  source,
+  SEVERITY_LABEL,
+} from "./modules/weather.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -374,6 +382,101 @@ function fillList(id, items, project) {
     })
   );
 }
+
+// ---- Weather signs ----
+
+const cloudList = document.getElementById("cloud-list");
+const byLevelBtn = document.getElementById("by-level");
+const bySeverityBtn = document.getElementById("by-severity");
+
+function cloudCard(cloud) {
+  const card = document.createElement("div");
+  card.className = "card cloud";
+
+  const head = document.createElement("div");
+  head.className = "cloud-head";
+
+  const name = document.createElement("h4");
+  name.textContent = `${cloud.name} (${cloud.code})`;
+
+  const badge = document.createElement("span");
+  badge.className = `badge ${cloud.severity}`;
+  badge.textContent = SEVERITY_LABEL[cloud.severity];
+
+  head.append(name, badge);
+
+  const appearance = document.createElement("p");
+  appearance.className = "muted";
+  appearance.textContent = cloud.appearance;
+
+  const indicates = document.createElement("p");
+  indicates.textContent = cloud.indicates;
+
+  const lead = document.createElement("p");
+  lead.className = "hint";
+  lead.textContent = `Antelación: ${cloud.leadTime}`;
+
+  card.append(head, appearance, indicates, lead);
+  return card;
+}
+
+function renderCloudsByLevel() {
+  cloudList.replaceChildren();
+  for (const group of cloudsByLevel()) {
+    if (group.clouds.length === 0) continue;
+    const heading = document.createElement("h4");
+    heading.className = "group-heading";
+    heading.textContent = group.label;
+    cloudList.append(heading, ...group.clouds.map(cloudCard));
+  }
+}
+
+function renderCloudsBySeverity() {
+  cloudList.replaceChildren(...cloudsBySeverity().map(cloudCard));
+}
+
+byLevelBtn.addEventListener("click", () => {
+  byLevelBtn.classList.add("active");
+  bySeverityBtn.classList.remove("active");
+  renderCloudsByLevel();
+});
+
+bySeverityBtn.addEventListener("click", () => {
+  bySeverityBtn.classList.add("active");
+  byLevelBtn.classList.remove("active");
+  renderCloudsBySeverity();
+});
+
+renderCloudsByLevel();
+
+const signList = document.getElementById("sign-list");
+signList.replaceChildren(
+  ...signs().map((entry) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const h = document.createElement("h4");
+    h.textContent = entry.sign;
+    const p = document.createElement("p");
+    p.textContent = entry.means;
+    card.append(h, p);
+    return card;
+  })
+);
+
+document.getElementById("storm-actions").replaceChildren(
+  ...stormActions().map((action) => {
+    const li = document.createElement("li");
+    li.textContent = action;
+    return li;
+  })
+);
+
+const sourceEl = document.getElementById("weather-source");
+const sourceLink = document.createElement("a");
+sourceLink.href = source().url;
+sourceLink.textContent = source().label;
+sourceLink.rel = "noopener noreferrer";
+sourceEl.append("Clasificación según ", sourceLink, ".");
 
 renderSaved();
 

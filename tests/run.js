@@ -40,6 +40,14 @@ import {
   ALPINE,
 } from "../public/js/data/signals.js";
 
+import { CLOUDS, LEVELS } from "../public/js/data/clouds.js";
+import {
+  cloudsByLevel,
+  cloudsBySeverity,
+  source,
+  SEVERITY_LABEL,
+} from "../public/js/modules/weather.js";
+
 // Reference sites. Longitude is positive east.
 const MADRID = { lat: 40.4168, lon: -3.7038 };
 const SYDNEY = { lat: -33.8688, lon: 151.2093 };
@@ -324,6 +332,56 @@ test("signals: each round is followed by a full minute of silence", () => {
   const last = steps[steps.length - 1];
   assertEqual(last.on, false);
   assertEqual(last.ms, 60000);
+});
+
+// ---- Weather signs ----
+//
+// Content, not computation — so these guard against the failure mode content
+// actually has: an entry that is half-filled, mislabelled, or silently
+// dropped from a view.
+
+test("weather: every cloud entry is complete and uses a known level", () => {
+  const levels = Object.keys(LEVELS);
+  const severities = Object.keys(SEVERITY_LABEL);
+  for (const cloud of CLOUDS) {
+    for (const field of ["code", "name", "appearance", "indicates", "leadTime"]) {
+      assert(
+        typeof cloud[field] === "string" && cloud[field].trim().length > 0,
+        `${cloud.code || "(sin código)"}: campo "${field}" vacío`
+      );
+    }
+    assert(levels.includes(cloud.level), `${cloud.code}: nivel desconocido "${cloud.level}"`);
+    assert(
+      severities.includes(cloud.severity),
+      `${cloud.code}: severidad desconocida "${cloud.severity}"`
+    );
+  }
+});
+
+test("weather: cloud codes are unique", () => {
+  const codes = CLOUDS.map((c) => c.code);
+  assertEqual(new Set(codes).size, codes.length, "duplicated cloud code");
+});
+
+test("weather: grouping by level keeps every cloud and invents none", () => {
+  const grouped = cloudsByLevel().flatMap((group) => group.clouds);
+  assertEqual(grouped.length, CLOUDS.length, "a cloud was dropped or duplicated");
+});
+
+test("weather: severity ordering puts the storm cloud first", () => {
+  const worstFirst = cloudsBySeverity();
+  assertEqual(worstFirst[0].code, "Cb", "cumulonimbus should sort first");
+  assertEqual(worstFirst[worstFirst.length - 1].severity, "calm");
+});
+
+test("weather: exactly one cloud is marked as demanding immediate action", () => {
+  const dangerous = CLOUDS.filter((c) => c.severity === "danger");
+  assertEqual(dangerous.length, 1, "only the cumulonimbus should be 'danger'");
+});
+
+test("weather: the module cites its source", () => {
+  assert(source().url.startsWith("https://"), "source needs a URL");
+  assert(source().label.length > 0, "source needs a label");
 });
 
 // Ephemeris cross-check.
