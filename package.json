@@ -1,0 +1,12 @@
+{
+  "name": "azimut",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-first wilderness tools that run entirely in the browser",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/run.js",
+    "serve": "python3 -m http.server 8080 --directory public"
+  }
+}

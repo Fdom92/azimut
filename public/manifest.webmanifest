@@ -1,0 +1,14 @@
+{
+  "name": "Azimut",
+  "short_name": "Azimut",
+  "description": "Herramientas de monte que funcionan sin cobertura. Todo el cálculo es local.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1512",
+  "theme_color": "#0d1512",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

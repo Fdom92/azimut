@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Herramientas de monte que funcionan sin cobertura. Todo el cálculo es local.">
+<meta name="theme-color" content="#0d1512">
+<title>Azimut</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="back" class="back" hidden aria-label="Volver">←</button>
+  <h1>Azimut</h1>
+  <p class="tagline">Sin cobertura, sin cuenta, sin salir del dispositivo</p>
+</header>
+
+<main>
+  <nav id="home" class="grid" aria-label="Herramientas">
+    <button class="tile" data-tool="sunMoon">
+      <span class="tile-name">Sol y luna</span>
+      <span class="tile-desc">Orto, ocaso, crepúsculos y hora dorada</span>
+    </button>
+    <button class="tile" disabled>
+      <span class="tile-name">Orientación</span>
+      <span class="tile-desc">Próximamente</span>
+    </button>
+    <button class="tile" disabled>
+      <span class="tile-name">Nudos</span>
+      <span class="tile-desc">Próximamente</span>
+    </button>
+    <button class="tile" disabled>
+      <span class="tile-name">Socorro</span>
+      <span class="tile-desc">Próximamente</span>
+    </button>
+    <button class="tile" disabled>
+      <span class="tile-name">Meteo</span>
+      <span class="tile-desc">Próximamente</span>
+    </button>
+    <button class="tile" disabled>
+      <span class="tile-name">Naturaleza</span>
+      <span class="tile-desc">Próximamente</span>
+    </button>
+  </nav>
+
+  <section id="sunMoon" class="panel" hidden>
+    <h2>Sol y luna</h2>
+
+    <form id="sun-form" class="controls">
+      <div class="row">
+        <label for="lat">Latitud</label>
+        <input id="lat" name="lat" type="number" step="any" min="-90" max="90" placeholder="40.4168" required>
+      </div>
+      <div class="row">
+        <label for="lon">Longitud</label>
+        <input id="lon" name="lon" type="number" step="any" min="-180" max="180" placeholder="-3.7038" required>
+      </div>
+      <div class="row">
+        <label for="date">Fecha</label>
+        <input id="date" name="date" type="date" required>
+      </div>
+      <div class="actions">
+        <button type="submit">Calcular</button>
+        <button type="button" id="locate">Usar mi posición</button>
+        <button type="button" id="save-location">Guardar sitio</button>
+      </div>
+      <p class="hint">El GPS funciona sin cobertura. La posición no sale del dispositivo.</p>
+    </form>
+
+    <div id="saved" class="saved" hidden>
+      <h3>Sitios guardados</h3>
+      <ul id="saved-list"></ul>
+    </div>
+
+    <div id="sun-result" class="result" hidden></div>
+  </section>
+</main>
+
+<footer>
+  <p>Cálculo solar según Meeus / NOAA. <a href="https://github.com/Fdom92/azimut">Código</a>.</p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
