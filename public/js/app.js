@@ -1155,4 +1155,16 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {
     // Offline caching is a bonus; the app works without it.
   });
+
+  // When a new worker takes over, this page is still running the HTML it
+  // loaded from the previous version while any further fetch would come from
+  // the new one. Reloading once puts the document and its modules back on the
+  // same version — without it, a deploy can leave a running tab with a script
+  // that throws partway through and panels that never finish building.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
 }

@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v11";
+const CACHE = "azimut-v12";
 
 const ASSETS = [
   ".",
@@ -38,6 +38,13 @@ const ASSETS = [
   "icons/icon.svg",
 ];
 
+// skipWaiting hands control of an already-loaded page to the new worker, so
+// the page keeps the HTML it started with while its imports resolve against
+// the new cache. That mixed pair is how a stale deploy shows up as a module
+// throwing halfway through and leaving half the panels unbuilt.
+//
+// Taking over fast is still what we want; the page just has to reload when it
+// happens, which app.js does on controllerchange.
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
   self.skipWaiting();
