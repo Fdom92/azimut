@@ -888,7 +888,7 @@ function openCoords() {
       renderCoordsPosition();
       if (ok) return renderCoords();
       coordsResult.replaceChildren(
-        notice("Sin posición. Métela en Sol y luna o toca «Usar mi posición».")
+        notice("Sin posición todavía. Escribe la latitud y la longitud arriba y pulsa Aplicar.")
       );
     },
   });

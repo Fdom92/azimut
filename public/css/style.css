@@ -293,6 +293,22 @@ select {
   font: inherit;
 }
 
+/* The dropdown list is drawn by the platform, not by the page, and it does not
+   inherit the select's colours. Left alone the options came out as near-white
+   text with a transparent background over the system's white popup — present,
+   selectable, and completely unreadable. They need their own pair. */
+option {
+  background-color: #ffffff;
+  color: #16211b;
+}
+
+@media (prefers-color-scheme: dark) {
+  option {
+    background-color: #1b2a22;
+    color: #e4ede7;
+  }
+}
+
 .check {
   display: flex;
   align-items: center;
@@ -732,18 +748,26 @@ button:disabled { opacity: 0.45; cursor: default; }
   margin-bottom: var(--gap-sm);
 }
 
+/* A flex row let the two fields shrink while the button refused to, so on a
+   phone they collapsed to a twenty-pixel sliver. A grid gives the fields a
+   share that cannot be taken from them, and drops the button onto its own row
+   when there is genuinely no space. */
 .position-manual {
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
   gap: 8px;
-  flex-wrap: wrap;
+}
+
+@media (max-width: 400px) {
+  .position-manual { grid-template-columns: 1fr 1fr; }
+  .position-manual button { grid-column: 1 / -1; }
 }
 
 .position-field {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  flex: 1 1 110px;
   min-width: 0;
   font-size: 12px;
   color: var(--muted);
