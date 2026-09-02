@@ -40,9 +40,9 @@
       <span class="tile-name">Meteo</span>
       <span class="tile-desc">Leer las nubes y qué anuncian</span>
     </button>
-    <button class="tile" disabled>
+    <button class="tile" data-tool="nature">
       <span class="tile-name">Naturaleza</span>
-      <span class="tile-desc">Próximamente</span>
+      <span class="tile-desc">Qué te puedes encontrar y qué hacer</span>
     </button>
   </nav>
 
@@ -162,6 +162,16 @@
     <div id="sign-list"></div>
 
     <p class="hint" id="weather-source"></p>
+  </section>
+
+  <section id="nature" class="panel" hidden>
+    <h2>Naturaleza ibérica</h2>
+    <div class="card warn">
+      <p id="nature-disclaimer"></p>
+    </div>
+    <div id="nature-list"></div>
+    <h3>Fuentes</h3>
+    <ul id="nature-sources" class="events"></ul>
   </section>
 
   <section id="knots" class="panel" hidden>

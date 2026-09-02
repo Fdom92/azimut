@@ -48,6 +48,14 @@ import {
   phaseName,
 } from "../public/js/astro/lunar.js";
 import { litPath } from "../public/js/modules/moonPhase.js";
+import { NATURE, CATEGORIES } from "../public/js/data/regions/iberia-nature.js";
+import {
+  byCategory,
+  routesToEmergency,
+  routesToHelp,
+  allSources,
+  find,
+} from "../public/js/modules/nature.js";
 import {
   greenwichSiderealTime,
   eclipticToEquatorial,
@@ -647,6 +655,128 @@ test("weather: the altitude chart draws every cloud and invents none", () => {
     assert(drawnCodes.includes(code), `"${code}" está en los datos pero no se dibuja`);
   }
   assertEqual(new Set(drawnCodes).size, drawnCodes.length, "código duplicado en el diagrama");
+});
+
+// ---- Nature ----
+//
+// This module carries the only content in the app where being wrong hurts
+// someone. The tests hold the rules it was written under rather than
+// second-guessing the content: everything is sourced, everything ends in an
+// action, anything that can turn serious routes to 112, and the folk remedies
+// that cause harm are named as such.
+
+test("nature: ids are unique and categories are declared", () => {
+  const ids = NATURE.map((e) => e.id);
+  assertEqual(new Set(ids).size, ids.length, "id duplicado");
+  const categories = Object.keys(CATEGORIES);
+  for (const entry of NATURE) {
+    assert(categories.includes(entry.category), `${entry.id}: categoría desconocida`);
+  }
+});
+
+test("nature: every entry is fully written, with no empty prose", () => {
+  for (const entry of NATURE) {
+    assert(entry.name.trim().length > 0, `${entry.id}: sin nombre`);
+    for (const field of ["where", "recognise", "risk"]) {
+      assert(
+        typeof entry[field] === "string" && entry[field].trim().length > 20,
+        `${entry.id}: campo "${field}" vacío o demasiado corto`
+      );
+    }
+  }
+});
+
+test("nature: every entry names actions, and none is left as description only", () => {
+  for (const entry of NATURE) {
+    assert(Array.isArray(entry.actions) && entry.actions.length > 0,
+      `${entry.id}: sin acciones — una ficha que solo describe no sirve de nada`);
+    for (const action of entry.actions) {
+      assert(action.trim().length > 0, `${entry.id}: acción vacía`);
+    }
+  }
+});
+
+test("nature: every entry says when to stop self-managing and get help", () => {
+  // Not everything is a 112 call — a tick bite escalates to a doctor, not to
+  // an ambulance. What every entry must do is name the point where you hand
+  // over to someone qualified.
+  for (const entry of NATURE) {
+    assert(
+      routesToHelp(entry),
+      `${entry.id}: no dice en qué momento acudir a un profesional`
+    );
+  }
+});
+
+test("nature: entries that can turn serious fast route to 112 specifically", () => {
+  for (const entry of NATURE) {
+    if (!entry.emergency) continue;
+    assert(
+      routesToEmergency(entry),
+      `${entry.id}: marcada como urgencia pero no menciona el 112`
+    );
+  }
+  // And the ones that can escalate should offer 112 as the escalation, even
+  // when they are not emergencies by default.
+  for (const id of ["procesionaria", "velutina"]) {
+    assert(routesToEmergency(find(id)), `${id}: debería ofrecer el 112 al agravarse`);
+  }
+});
+
+test("nature: the bite protocol calls for help first, not last", () => {
+  const vipers = find("viboras");
+  assert(vipers, "la ficha de víboras debe existir");
+  assert(vipers.emergency, "debe estar marcada como urgencia");
+  assert(
+    vipers.actions[0].includes("112"),
+    "en una mordedura, llamar va primero: ningún primer auxilio justifica retrasar el traslado"
+  );
+});
+
+test("nature: the harmful folk remedies are named as things never to do", () => {
+  const vipers = find("viboras");
+  const forbidden = vipers.never.join(" ").toLowerCase();
+  for (const remedy of ["torniquete", "succionar", "cortar", "alcohol"]) {
+    assert(forbidden.includes(remedy), `falta desaconsejar: ${remedy}`);
+  }
+
+  const ticks = find("garrapatas");
+  const tickForbidden = ticks.never.join(" ").toLowerCase();
+  for (const remedy of ["aceite", "calor", "retorcerla"]) {
+    assert(tickForbidden.includes(remedy), `garrapatas, falta desaconsejar: ${remedy}`);
+  }
+});
+
+test("nature: identifying a snake is explicitly decoupled from the first aid", () => {
+  const vipers = find("viboras");
+  assert(
+    typeof vipers.identificationNote === "string" &&
+      vipers.identificationNote.length > 40,
+    "la ficha debe decir que identificar no cambia la actuación"
+  );
+});
+
+test("nature: every entry cites a source, and every source has a URL", () => {
+  for (const entry of NATURE) {
+    assert(entry.sources.length > 0, `${entry.id}: sin fuentes`);
+    for (const source of entry.sources) {
+      assert(source.url.startsWith("https://"), `${entry.id}: fuente sin URL válida`);
+      assert(source.label.trim().length > 0, `${entry.id}: fuente sin etiqueta`);
+    }
+  }
+  assert(allSources().length >= 5, "esperaba varias fuentes distintas");
+});
+
+test("nature: nothing about mushrooms, in any form", () => {
+  const haystack = JSON.stringify(NATURE).toLowerCase();
+  for (const word of ["seta", "hongo", "champiñón", "amanita", "micolog"]) {
+    assert(!haystack.includes(word), `aparece "${word}" — este módulo no toca setas`);
+  }
+});
+
+test("nature: grouping keeps every entry and invents none", () => {
+  const grouped = byCategory().flatMap((g) => g.entries);
+  assertEqual(grouped.length, NATURE.length, "una ficha se perdió o duplicó al agrupar");
 });
 
 // ---- Knots ----

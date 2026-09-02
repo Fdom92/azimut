@@ -464,3 +464,37 @@ button:disabled { opacity: 0.45; cursor: default; }
   border: none;
   gap: 2px 14px;
 }
+
+/* ---- Nature ---- */
+
+.section-label {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.actions-list ol { margin: 0; padding-left: 20px; }
+.actions-list li { margin-bottom: 6px; }
+
+.never-list ul { margin: 0; padding-left: 0; list-style: none; }
+.never-list li {
+  margin-bottom: 6px;
+  padding-left: 20px;
+  position: relative;
+  color: var(--muted);
+}
+.never-list li::before {
+  content: "×";
+  position: absolute;
+  left: 4px;
+  color: var(--danger);
+  font-weight: 700;
+}
+.never-list .section-label { color: var(--danger); }
+
+.card a { color: var(--accent); }
+
+.actions-list ol { margin: 0 0 4px; }
+.never-list { margin-top: 14px; }

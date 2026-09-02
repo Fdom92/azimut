@@ -28,6 +28,11 @@ import { buildMoonDisc } from "./modules/moonPhase.js";
 import { buildCompass, crossCheck } from "./modules/compass.js";
 import { buildCloudChart } from "./modules/cloudChart.js";
 import { CLOUDS } from "./data/clouds.js";
+import {
+  byCategory as natureByCategory,
+  allSources as natureSources,
+  DISCLAIMER as NATURE_DISCLAIMER,
+} from "./modules/nature.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -664,6 +669,117 @@ for (const group of knotsByGroup()) {
 
   knotList.append(heading, description, ...group.knots.map(knotCard));
 }
+
+// ---- Nature ----
+
+document.getElementById("nature-disclaimer").textContent = NATURE_DISCLAIMER;
+
+function natureCard(entry) {
+  const card = document.createElement("div");
+  card.className = "card";
+  if (entry.emergency) card.classList.add("warn");
+
+  const head = document.createElement("div");
+  head.className = "cloud-head";
+  const name = document.createElement("h4");
+  name.textContent = entry.name;
+  head.append(name);
+  if (entry.emergency) {
+    const badge = document.createElement("span");
+    badge.className = "badge danger";
+    badge.textContent = "Urgencia";
+    head.append(badge);
+  }
+  card.append(head);
+
+  if (entry.aka.length > 0) {
+    card.append(para(`También: ${entry.aka.join(", ")}`, "hint"));
+  }
+
+  card.append(
+    labelled("Dónde", entry.where),
+    labelled("Cómo es", entry.recognise),
+    labelled("Qué implica", entry.risk)
+  );
+
+  if (entry.identificationNote) {
+    const note = para(entry.identificationNote, "notice");
+    card.append(note);
+  }
+
+  card.append(section("Qué hacer", entry.actions, "ol", "actions-list"));
+  if (entry.never.length > 0) {
+    card.append(section("Nunca", entry.never, "ul", "never-list"));
+  }
+
+  const sources = document.createElement("p");
+  sources.className = "hint";
+  sources.append("Fuente: ");
+  entry.sources.forEach((source, index) => {
+    if (index > 0) sources.append(" · ");
+    const link = document.createElement("a");
+    link.href = source.url;
+    link.textContent = source.label;
+    link.rel = "noopener noreferrer";
+    sources.append(link);
+  });
+  card.append(sources);
+
+  return card;
+}
+
+function para(text, className) {
+  const p = document.createElement("p");
+  if (className) p.className = className;
+  p.textContent = text;
+  return p;
+}
+
+function labelled(term, text) {
+  const wrapper = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = `${term}. `;
+  wrapper.append(strong, text);
+  return wrapper;
+}
+
+function section(title, items, listTag, className) {
+  const wrapper = document.createElement("div");
+  wrapper.className = className;
+  const heading = document.createElement("p");
+  heading.className = "section-label";
+  heading.textContent = title;
+  const list = document.createElement(listTag);
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.append(li);
+  }
+  wrapper.append(heading, list);
+  return wrapper;
+}
+
+const natureList = document.getElementById("nature-list");
+natureList.replaceChildren();
+for (const group of natureByCategory()) {
+  if (group.entries.length === 0) continue;
+  const heading = document.createElement("h4");
+  heading.className = "group-heading";
+  heading.textContent = group.label;
+  natureList.append(heading, ...group.entries.map(natureCard));
+}
+
+document.getElementById("nature-sources").replaceChildren(
+  ...natureSources().map((source) => {
+    const li = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = source.url;
+    link.textContent = source.label;
+    link.rel = "noopener noreferrer";
+    li.append(link);
+    return li;
+  })
+);
 
 renderSaved();
 
