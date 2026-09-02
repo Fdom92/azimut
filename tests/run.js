@@ -41,6 +41,7 @@ import {
 } from "../public/js/data/signals.js";
 
 import { CLOUDS, LEVELS } from "../public/js/data/clouds.js";
+import { placementCodes } from "../public/js/modules/cloudChart.js";
 
 import { KNOTS, GROUPS } from "../public/js/data/knots.js";
 import {
@@ -390,6 +391,19 @@ test("weather: exactly one cloud is marked as demanding immediate action", () =>
 test("weather: the module cites its source", () => {
   assert(source().url.startsWith("https://"), "source needs a URL");
   assert(source().label.length > 0, "source needs a label");
+});
+
+test("weather: the altitude chart draws every cloud and invents none", () => {
+  const dataCodes = new Set(CLOUDS.map((c) => c.code));
+  const drawnCodes = placementCodes();
+
+  for (const code of drawnCodes) {
+    assert(dataCodes.has(code), `el diagrama dibuja "${code}", que no está en los datos`);
+  }
+  for (const code of dataCodes) {
+    assert(drawnCodes.includes(code), `"${code}" está en los datos pero no se dibuja`);
+  }
+  assertEqual(new Set(drawnCodes).size, drawnCodes.length, "código duplicado en el diagrama");
 });
 
 // ---- Knots ----

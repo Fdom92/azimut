@@ -23,6 +23,10 @@ import {
   imageAttribution,
   progress,
 } from "./modules/knots.js";
+import { buildSunChart } from "./modules/sunChart.js";
+import { buildCompass, crossCheck } from "./modules/compass.js";
+import { buildCloudChart } from "./modules/cloudChart.js";
+import { CLOUDS } from "./data/clouds.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -53,7 +57,10 @@ function showHome() {
 for (const tile of document.querySelectorAll(".tile[data-tool]")) {
   tile.addEventListener("click", () => {
     showTool(tile.dataset.tool);
-    if (tile.dataset.tool === "orient") renderOrientation();
+    if (tile.dataset.tool === "orient") {
+      renderOrientation();
+      refreshCompass();
+    }
   });
 }
 
@@ -167,6 +174,7 @@ function render() {
       : "Bajo el horizonte"
   );
   resultEl.append(summary);
+  resultEl.append(buildSunChart(date, lat, lon));
 
   const list = document.createElement("ul");
   list.className = "events";
@@ -261,6 +269,37 @@ function methodCard(title, body) {
   return card;
 }
 
+const compassMount = document.getElementById("compass-mount");
+const compassWidget = buildCompass();
+compassMount.append(compassWidget.svg);
+
+let lastHeading = null;
+
+// Redraw the rose whenever either input moves: the device heading, or the
+// sun's bearing as the day goes on.
+function refreshCompass() {
+  const position = currentPosition();
+  const sunAzimuth = position
+    ? shadowMethod(new Date(), position.lat, position.lon)
+    : null;
+  const azimuth = sunAzimuth?.usable ? sunAzimuth.sunAzimuth : null;
+  compassWidget.update({ heading: lastHeading, sunAzimuth: azimuth });
+
+  if (lastHeading == null) return;
+
+  const check = crossCheck(lastHeading, azimuth);
+  const bearing = `${lastHeading.toFixed(0)}° (${compassPoint(lastHeading)})`;
+  if (!check.comparable) {
+    compassReading.textContent = `Miras hacia ${bearing} respecto al norte geográfico. Sin sol sobre el horizonte no hay con qué contrastarlo.`;
+    return;
+  }
+  compassReading.textContent = check.trustworthy
+    ? `Miras hacia ${bearing}. Coincide con la posición del sol (${check.delta.toFixed(0)}° de diferencia), así que la lectura es buena.`
+    : `Miras hacia ${bearing}, pero eso discrepa ${check.delta.toFixed(0)}° de donde está el sol. Fíate del sol: algo cerca está perturbando el magnetómetro.`;
+}
+
+refreshCompass();
+
 document.getElementById("compass-start").addEventListener("click", async () => {
   const Sensor = window.DeviceOrientationEvent;
   if (!Sensor) {
@@ -292,11 +331,8 @@ function onHeading(event) {
       "El dispositivo entrega orientación relativa, no absoluta: no sirve como brújula.";
     return;
   }
-  const declination = region.magneticDeclination.approxDegrees;
-  const trueHeading = magneticToTrue(magnetic, declination);
-  compassReading.textContent =
-    `${trueHeading.toFixed(0)}° (${compassPoint(trueHeading)}) respecto al norte geográfico — ` +
-    `declinación aplicada ${declination}°, aproximada para la península.`;
+  lastHeading = magneticToTrue(magnetic, region.magneticDeclination.approxDegrees);
+  refreshCompass();
 }
 
 // ---- Distress ----
@@ -455,6 +491,8 @@ bySeverityBtn.addEventListener("click", () => {
 
 renderCloudsByLevel();
 
+document.getElementById("cloud-chart").append(buildCloudChart(CLOUDS));
+
 const signList = document.getElementById("sign-list");
 signList.replaceChildren(
   ...signs().map((entry) => {
@@ -502,8 +540,10 @@ function knotCard(knot) {
   name.textContent = knot.name;
   head.append(name);
 
+  // When nothing is done yet, the header line above already says so — a badge
+  // on all ten entries is noise. Only mark entries that differ from that.
   const pending = missingParts(knot);
-  if (pending.length > 0) {
+  if (pending.length > 0 && pending.length < 3) {
     const badge = document.createElement("span");
     badge.className = "badge pending";
     badge.textContent = `Falta: ${pending.join(", ")}`;
