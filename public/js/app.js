@@ -1,4 +1,11 @@
-import { sunReport, formatTime, formatDuration, compassPoint } from "./modules/sunMoon.js";
+import {
+  sunReport,
+  formatTime,
+  formatDuration,
+  compassPoint,
+  parseLatitude,
+  parseLongitude,
+} from "./modules/sunMoon.js";
 import { listLocations, saveLocation, deleteLocation } from "./store.js";
 import {
   shadowMethod,
@@ -68,12 +75,70 @@ function showHome() {
 
 for (const tile of document.querySelectorAll(".tile[data-tool]")) {
   tile.addEventListener("click", () => {
-    showTool(tile.dataset.tool);
-    if (tile.dataset.tool === "orient") {
+    const tool = tile.dataset.tool;
+    showTool(tool);
+    if (tool === "sunMoon") openSunMoon();
+    if (tool === "orient") {
+      renderOrientationPosition();
       renderOrientation();
       refreshCompass();
     }
   });
+}
+
+// Position is entered in one panel but every solar method depends on it, so
+// asking for it once and sharing it beats sending people back and forth.
+let locating = false;
+
+function requestPosition({ onDone } = {}) {
+  if (!navigator.geolocation || locating) return;
+  locating = true;
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      locating = false;
+      latInput.value = coords.latitude.toFixed(4);
+      lonInput.value = coords.longitude.toFixed(4);
+      onDone?.(true);
+    },
+    () => {
+      locating = false;
+      onDone?.(false);
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+// The panel used to open on three blank inputs, hiding everything it computes
+// behind manual data entry. Now it asks for a position once and draws
+// immediately; declining just leaves the form ready.
+let sunMoonOpened = false;
+
+function openSunMoon() {
+  if (sunMoonOpened) return;
+  sunMoonOpened = true;
+
+  if (currentPosition()) {
+    render();
+    return;
+  }
+
+  resultEl.hidden = false;
+  resultEl.replaceChildren(notice("Buscando tu posición…"));
+  requestPosition({
+    onDone: (ok) => {
+      if (ok) return render();
+      resultEl.replaceChildren(
+        notice("Sin posición todavía. Métela a mano o toca «Usar mi posición».")
+      );
+    },
+  });
+}
+
+function notice(message) {
+  const p = document.createElement("p");
+  p.className = "notice";
+  p.textContent = message;
+  return p;
 }
 
 backBtn.addEventListener("click", () => {
@@ -95,24 +160,19 @@ document.getElementById("locate").addEventListener("click", () => {
     showError("Este navegador no expone geolocalización.");
     return;
   }
-  navigator.geolocation.getCurrentPosition(
-    ({ coords }) => {
-      latInput.value = coords.latitude.toFixed(4);
-      lonInput.value = coords.longitude.toFixed(4);
-      render();
-    },
-    (err) => showError(`No se pudo obtener la posición: ${err.message}`),
-    { enableHighAccuracy: true, timeout: 15000 }
-  );
+  requestPosition({
+    onDone: (ok) =>
+      ok ? render() : showError("No se pudo obtener la posición."),
+  });
 });
 
 document.getElementById("save-location").addEventListener("click", async () => {
-  const lat = Number(latInput.value);
-  const lon = Number(lonInput.value);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+  const position = currentPosition();
+  if (!position) {
     showError("Introduce una latitud y longitud válidas antes de guardar.");
     return;
   }
+  const { lat, lon } = position;
   const name = prompt("Nombre del sitio");
   if (!name) return;
   await saveLocation({ name, lat, lon });
@@ -152,15 +212,17 @@ async function renderSaved() {
 }
 
 function render() {
-  const lat = Number(latInput.value);
-  const lon = Number(lonInput.value);
+  const position = currentPosition();
   const date = new Date(`${dateInput.value}T12:00:00`);
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Number.isNaN(date.getTime())) {
-    showError("Revisa la latitud, la longitud y la fecha.");
+  if (!position || Number.isNaN(date.getTime())) {
+    showError(
+      "Revisa la latitud (-90 a 90), la longitud (-180 a 180) y la fecha."
+    );
     return;
   }
 
+  const { lat, lon } = position;
   const report = sunReport(date, lat, lon);
   resultEl.hidden = false;
   resultEl.replaceChildren();
@@ -267,9 +329,38 @@ const orientResult = document.getElementById("orient-result");
 const compassReading = document.getElementById("compass-reading");
 
 function currentPosition() {
-  const lat = Number(latInput.value);
-  const lon = Number(lonInput.value);
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+  const lat = parseLatitude(latInput.value);
+  const lon = parseLongitude(lonInput.value);
+  return lat != null && lon != null ? { lat, lon } : null;
+}
+
+function renderOrientationPosition() {
+  const bar = document.getElementById("orient-position");
+  const position = currentPosition();
+  bar.replaceChildren();
+
+  const label = document.createElement("span");
+  label.textContent = position
+    ? `Posición: ${position.lat.toFixed(3)}, ${position.lon.toFixed(3)}`
+    : "Sin posición — los métodos solares la necesitan";
+  if (!position) label.className = "muted";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "link";
+  button.textContent = position ? "actualizar" : "Usar mi posición";
+  button.addEventListener("click", () => {
+    button.textContent = "buscando…";
+    requestPosition({
+      onDone: () => {
+        renderOrientationPosition();
+        renderOrientation();
+        refreshCompass();
+      },
+    });
+  });
+
+  bar.append(label, button);
 }
 
 function renderOrientation() {
@@ -277,11 +368,9 @@ function renderOrientation() {
   orientResult.replaceChildren();
 
   if (!position) {
-    const p = document.createElement("p");
-    p.className = "notice";
-    p.textContent =
-      "Introduce una posición en Sol y luna primero — los métodos solares la necesitan.";
-    orientResult.append(p);
+    orientResult.append(
+      notice("Con una posición, aquí salen los tres métodos calculados para tu sitio y tu hora.")
+    );
     return;
   }
 

@@ -80,3 +80,23 @@ export function formatTime(date) {
   if (!date) return "—";
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+// Number("") is 0, not NaN, so a blank field used to sail through a
+// Number.isFinite check and quietly compute for latitude 0, longitude 0 — the
+// Gulf of Guinea, with a plausible-looking twelve-hour day. Blank has to be
+// rejected before the conversion, and the range checked after it.
+export function parseCoordinate(raw, { min, max }) {
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  if (value < min || value > max) return null;
+  return value;
+}
+
+export function parseLatitude(raw) {
+  return parseCoordinate(raw, { min: -90, max: 90 });
+}
+
+export function parseLongitude(raw) {
+  return parseCoordinate(raw, { min: -180, max: 180 });
+}

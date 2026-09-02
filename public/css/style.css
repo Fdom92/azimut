@@ -41,9 +41,13 @@ body {
 }
 
 .topbar {
-  position: relative;
-  padding: 24px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0 16px;
 }
+
+.topbar-text { min-width: 0; }
 
 .topbar h1 {
   margin: 0;
@@ -58,17 +62,18 @@ body {
 }
 
 .back {
-  position: absolute;
-  top: 20px;
-  right: 0;
+  flex-shrink: 0;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: var(--radius);
-  font-size: 18px;
-  padding: 4px 14px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 8px 14px;
   cursor: pointer;
 }
+
+.back:hover { border-color: var(--accent); }
 
 .grid {
   display: grid;
@@ -80,7 +85,7 @@ body {
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   text-align: left;
   padding: 16px;
   background: var(--surface);
@@ -89,12 +94,22 @@ body {
   color: var(--text);
   font: inherit;
   cursor: pointer;
+  /* Even rows regardless of how long each description runs. */
+  min-height: 132px;
+  justify-content: flex-start;
 }
+
+.tile-icon { font-size: 26px; line-height: 1.2; margin-bottom: 6px; }
+
+/* Distress is the one tile someone may be looking for in a hurry. */
+.tile.urgent { border-color: rgba(240, 128, 108, 0.5); }
+.tile.urgent .tile-name { color: var(--danger); }
+.tile.urgent:hover:not(:disabled) { border-color: var(--danger); }
 
 .tile:hover:not(:disabled) { border-color: var(--accent); }
 .tile:disabled { opacity: 0.45; cursor: default; }
 .tile-name { font-weight: 600; }
-.tile-desc { color: var(--muted); font-size: 13px; }
+.tile-desc { color: var(--muted); font-size: 13px; line-height: 1.4; }
 
 .panel h2 { margin-top: 0; }
 
@@ -552,3 +567,19 @@ button:disabled { opacity: 0.45; cursor: default; }
 .diagram-skin { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; }
 .diagram-band.dark { fill: #3b4a42; }
 .diagram-band.orange { fill: #d97a2b; }
+
+.position-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.position-bar .muted { color: var(--muted); }

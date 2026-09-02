@@ -49,6 +49,7 @@ import {
   phaseGlyph,
 } from "../public/js/astro/lunar.js";
 import { litPath } from "../public/js/modules/moonPhase.js";
+import { parseLatitude, parseLongitude } from "../public/js/modules/sunMoon.js";
 import { NATURE, CATEGORIES } from "../public/js/data/regions/iberia-nature.js";
 import {
   byCategory,
@@ -680,6 +681,38 @@ test("weather: the altitude chart draws every cloud and invents none", () => {
     assert(drawnCodes.includes(code), `"${code}" está en los datos pero no se dibuja`);
   }
   assertEqual(new Set(drawnCodes).size, drawnCodes.length, "código duplicado en el diagrama");
+});
+
+// ---- Coordinate input ----
+
+test("coords input: a blank field is rejected rather than read as zero", () => {
+  // Number("") is 0, so a blank latitude used to compute for the Gulf of
+  // Guinea and return a plausible twelve-hour day instead of an error.
+  for (const blank of ["", "   ", "\t"]) {
+    assertEqual(parseLatitude(blank), null, `"${blank}" no es una latitud`);
+    assertEqual(parseLongitude(blank), null, `"${blank}" no es una longitud`);
+  }
+});
+
+test("coords input: zero is still a valid coordinate", () => {
+  assertEqual(parseLatitude("0"), 0);
+  assertEqual(parseLongitude("0"), 0);
+});
+
+test("coords input: junk and out-of-range values are rejected", () => {
+  for (const junk of ["abc", "--3", "NaN", undefined, null]) {
+    assertEqual(parseLatitude(junk), null, `"${junk}" no es una latitud`);
+  }
+  assertEqual(parseLatitude("91"), null, "latitud fuera de rango");
+  assertEqual(parseLatitude("-90.1"), null, "latitud fuera de rango");
+  assertEqual(parseLongitude("181"), null, "longitud fuera de rango");
+  assertEqual(parseLatitude("-90"), -90, "los extremos sí valen");
+  assertEqual(parseLongitude("180"), 180, "los extremos sí valen");
+});
+
+test("coords input: ordinary values parse, decimals included", () => {
+  assertClose(parseLatitude("40.4168"), 40.4168, 1e-9);
+  assertClose(parseLongitude("-3.7038"), -3.7038, 1e-9);
 });
 
 // ---- Nature ----
