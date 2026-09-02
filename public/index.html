@@ -12,6 +12,17 @@
 </head>
 <body>
 
+<script>
+  // Every form here is handled in JavaScript. A form with no action submits to
+  // the current URL, so if app.js ever fails to load the Calcular buttons turn
+  // into page reloads and dump you back on the home grid. This runs as a
+  // classic script before the module, so it holds even when the module does
+  // not.
+  document.addEventListener("submit", function (event) {
+    event.preventDefault();
+  });
+</script>
+
 <header class="topbar">
   <button id="back" class="back" hidden aria-label="Volver">←</button>
   <div class="topbar-text">

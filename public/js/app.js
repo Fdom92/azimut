@@ -941,26 +941,82 @@ function renderCoords() {
 }
 
 // One position control, rendered wherever a panel needs it.
+//
+// It carries manual entry as well as geolocation. Offering only "use my
+// location" left a dead end whenever the GPS was refused, unavailable or
+// simply indoors — the coordinates panel had no way at all to get a position
+// into it, which defeated the point of the panel.
 function positionBar(bar, onUpdate) {
   const position = currentPosition();
   bar.replaceChildren();
+  bar.classList.toggle("stacked", true);
+
+  const top = document.createElement("div");
+  top.className = "position-row";
 
   const label = document.createElement("span");
   label.textContent = position
-    ? `Posición: ${position.lat.toFixed(3)}, ${position.lon.toFixed(3)}`
+    ? `Posición: ${position.lat.toFixed(4)}, ${position.lon.toFixed(4)}`
     : "Sin posición";
   if (!position) label.className = "muted";
 
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "link";
-  button.textContent = position ? "actualizar" : "Usar mi posición";
-  button.addEventListener("click", () => {
-    button.textContent = "buscando…";
-    requestPosition({ onDone: () => onUpdate() });
+  const locate = document.createElement("button");
+  locate.type = "button";
+  locate.className = "link";
+  locate.textContent = position ? "actualizar" : "Usar mi posición";
+  locate.addEventListener("click", () => {
+    locate.textContent = "buscando…";
+    requestPosition({
+      onDone: (ok) => {
+        if (!ok) locate.textContent = "no disponible — métela a mano";
+        onUpdate();
+      },
+    });
   });
 
-  bar.append(label, button);
+  top.append(label, locate);
+
+  const manual = document.createElement("div");
+  manual.className = "position-manual";
+
+  const latField = coordinateField("Lat", latInput.value, "-90 a 90");
+  const lonField = coordinateField("Lon", lonInput.value, "-180 a 180");
+
+  const apply = document.createElement("button");
+  apply.type = "button";
+  apply.textContent = "Aplicar";
+  apply.addEventListener("click", () => {
+    const lat = parseLatitude(latField.input.value);
+    const lon = parseLongitude(lonField.input.value);
+    if (lat == null || lon == null) {
+      label.textContent = "Revisa los valores: latitud -90 a 90, longitud -180 a 180.";
+      label.className = "muted";
+      return;
+    }
+    latInput.value = lat;
+    lonInput.value = lon;
+    onUpdate();
+  });
+
+  manual.append(latField.wrapper, lonField.wrapper, apply);
+  bar.append(top, manual);
+}
+
+function coordinateField(labelText, value, placeholder) {
+  const wrapper = document.createElement("label");
+  wrapper.className = "position-field";
+
+  const text = document.createElement("span");
+  text.textContent = labelText;
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.step = "any";
+  input.value = value;
+  input.placeholder = placeholder;
+
+  wrapper.append(text, input);
+  return { wrapper, input };
 }
 
 // ---- Pace ----
