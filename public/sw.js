@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v7";
+const CACHE = "azimut-v9";
 
 const ASSETS = [
   ".",
@@ -23,11 +23,13 @@ const ASSETS = [
   "js/modules/sunChart.js",
   "js/modules/moonPhase.js",
   "js/modules/compass.js",
+  "js/modules/orientDiagrams.js",
   "js/modules/cloudChart.js",
   "js/modules/weather.js",
   "js/data/regions/iberia.js",
   "js/data/regions/iberia-nature.js",
   "js/modules/nature.js",
+  "js/modules/natureDiagrams.js",
   "manifest.webmanifest",
   "icons/icon.svg",
 ];

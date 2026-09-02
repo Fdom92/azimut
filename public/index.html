@@ -80,22 +80,25 @@
 
   <section id="orient" class="panel" hidden>
     <h2>Orientación</h2>
-    <p class="lead">
-      Los tres primeros métodos no necesitan el móvil encendido — que es
-      justo cuando hacen falta. Usa la posición y la fecha de Sol y luna.
-    </p>
-    <div id="orient-result" class="result"></div>
 
     <div class="card">
-      <h3>Brújula del dispositivo</h3>
-      <p class="hint">
-        Secundaria, nunca la base: pierde precisión cerca de metal o
-        electrónica y el soporte varía mucho entre dispositivos.
-      </p>
+      <h3>Brújula</h3>
       <div id="compass-mount" class="compass-mount"></div>
       <button type="button" id="compass-start">Activar brújula</button>
       <p id="compass-reading" class="reading">—</p>
+      <p class="hint">
+        La rosa lleva dos referencias: la aguja magnética del dispositivo y
+        la marca del sol, que va calculada. Si discrepan, manda el sol — el
+        magnetómetro pierde precisión cerca de metal o electrónica.
+      </p>
     </div>
+
+    <h3>Si no hay brújula</h3>
+    <p class="lead">
+      Estos tres funcionan con el móvil apagado, que es justo cuando hacen
+      falta. Usan la posición y la fecha de Sol y luna.
+    </p>
+    <div id="orient-result" class="result"></div>
   </section>
 
   <section id="distress" class="panel" hidden>

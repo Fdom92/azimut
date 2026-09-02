@@ -26,6 +26,11 @@ import {
 import { buildSunChart } from "./modules/sunChart.js";
 import { buildMoonDisc } from "./modules/moonPhase.js";
 import { buildCompass, crossCheck } from "./modules/compass.js";
+import {
+  stickAndShadow,
+  watchDial,
+  polarisFinder,
+} from "./modules/orientDiagrams.js";
 import { buildCloudChart } from "./modules/cloudChart.js";
 import { CLOUDS } from "./data/clouds.js";
 import {
@@ -33,6 +38,7 @@ import {
   allSources as natureSources,
   DISCLAIMER as NATURE_DISCLAIMER,
 } from "./modules/nature.js";
+import { diagramFor } from "./modules/natureDiagrams.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -288,25 +294,28 @@ function renderOrientation() {
     methodCard(
       "Palo y sombra",
       shadow.usable
-        ? `El sol está a ${shadow.sunAzimuth.toFixed(0)}° (${compassPoint(shadow.sunAzimuth)}), ${shadow.sunAltitude.toFixed(0)}° sobre el horizonte. La sombra de cualquier objeto vertical apunta a ${shadow.shadowPointsTo.toFixed(0)}° (${compassPoint(shadow.shadowPointsTo)}).`
-        : "El sol está demasiado bajo ahora mismo: la sombra se alarga y la dirección deja de ser fiable. Espera a que suba más de 5°."
+        ? `El sol está a ${shadow.sunAzimuth.toFixed(0)}° (${compassPoint(shadow.sunAzimuth)}), ${shadow.sunAltitude.toFixed(0)}° sobre el horizonte. Clava algo vertical: su sombra apunta a ${shadow.shadowPointsTo.toFixed(0)}° (${compassPoint(shadow.shadowPointsTo)}).`
+        : "El sol está demasiado bajo ahora mismo: la sombra se alarga y la dirección deja de ser fiable. Espera a que suba más de 5°.",
+      stickAndShadow()
     ),
     methodCard(
       "Método del reloj",
       watch.usable
         ? `Pon el reloj plano y la aguja horaria apuntando al sol. La bisectriz entre esa aguja y las 12 marca el ${watch.bisectorCardinal === "S" ? "sur" : "norte"}. Ojo: usa la hora solar, no la del móvil — en España el reloj va muy por delante del sol y es donde falla la versión clásica del truco.`
-        : "El sol está demasiado bajo para este método ahora mismo."
+        : "El sol está demasiado bajo para este método ahora mismo.",
+      watchDial(watch.bisectorCardinal)
     ),
     methodCard(
       "La Polar",
       polaris.visible
         ? `${polaris.pointerInstruction} Comprobación: la Polar debe quedar a unos ${polaris.expectedAltitude.toFixed(0)}° sobre el horizonte, que es tu latitud. Si no cuadra, no es esa estrella.`
-        : "Desde el hemisferio sur la Polar no se ve. Usa la Cruz del Sur."
+        : "Desde el hemisferio sur la Polar no se ve. Usa la Cruz del Sur.",
+      polaris.visible ? polarisFinder() : null
     )
   );
 }
 
-function methodCard(title, body) {
+function methodCard(title, body, diagram) {
   const card = document.createElement("div");
   card.className = "card";
   const h = document.createElement("h3");
@@ -314,6 +323,7 @@ function methodCard(title, body) {
   const p = document.createElement("p");
   p.textContent = body;
   card.append(h, p);
+  if (diagram) card.append(diagram);
   return card;
 }
 
@@ -696,11 +706,14 @@ function natureCard(entry) {
     card.append(para(`También: ${entry.aka.join(", ")}`, "hint"));
   }
 
-  card.append(
-    labelled("Dónde", entry.where),
-    labelled("Cómo es", entry.recognise),
-    labelled("Qué implica", entry.risk)
-  );
+  card.append(labelled("Dónde", entry.where), labelled("Cómo es", entry.recognise));
+
+  // The diagram sits with the description it illustrates, not at the top:
+  // it is a companion to the prose, not a thing to identify from.
+  const diagram = diagramFor(entry.id);
+  if (diagram) card.append(diagram);
+
+  card.append(labelled("Qué implica", entry.risk));
 
   if (entry.identificationNote) {
     const note = para(entry.identificationNote, "notice");

@@ -498,3 +498,57 @@ button:disabled { opacity: 0.45; cursor: default; }
 
 .actions-list ol { margin: 0 0 4px; }
 .never-list { margin-top: 14px; }
+
+.sun-chart .chart-glyph { font-size: 15px; }
+.sun-chart .chart-glyph.below { opacity: 0.45; }
+.sun-chart .legend-sun { stroke: var(--accent); stroke-width: 2; }
+.sun-chart .legend-moon {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.sun-chart .legend-label { fill: var(--muted); font-size: 10px; }
+
+/* ---- Shared diagram styling ---- */
+
+.diagram {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  display: block;
+  margin: 14px auto;
+}
+
+.diagram-label { fill: var(--muted); font-size: 11px; }
+.diagram-caption { fill: var(--text); font-size: 12px; font-weight: 600; }
+.diagram-ground { stroke: var(--muted); stroke-width: 2; }
+.diagram-object { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.diagram-shadow { fill: var(--muted); opacity: 0.5; }
+.diagram-ray { stroke: #e8b53f; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.diagram-glyph { font-size: 18px; }
+.diagram-arrow { stroke: var(--accent); stroke-width: 2; }
+.diagram-arrow-head { fill: var(--accent); }
+.diagram-divider { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
+
+.diagram-dial { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; }
+.diagram-tick { stroke: var(--muted); stroke-width: 1.5; }
+.diagram-hour { fill: var(--text); font-size: 12px; font-weight: 600; }
+.diagram-twelve { stroke: var(--muted); stroke-width: 2.5; stroke-linecap: round; }
+.diagram-hand { stroke: var(--text); stroke-width: 3.5; stroke-linecap: round; }
+.diagram-bisector { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 3; }
+.diagram-cardinal { fill: var(--accent); font-size: 15px; font-weight: 700; }
+
+.diagram-constellation { stroke: var(--muted); stroke-width: 1.5; }
+.diagram-star { fill: var(--text); }
+.diagram-star.polar { fill: var(--accent); }
+.diagram-star-name { fill: var(--muted); font-size: 10px; }
+.diagram-pointer { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 6 4; }
+
+.diagram-shape { fill: var(--surface-2); stroke: var(--muted); stroke-width: 1.5; }
+.diagram-shape.dark { fill: #3b4a42; stroke: var(--muted); }
+.diagram-shape.yellow { fill: #e0c65e; stroke: var(--muted); }
+.diagram-eye { fill: #e8d9a8; stroke: var(--muted); stroke-width: 1; }
+.diagram-pupil { fill: #1a221e; }
+.diagram-skin { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; }
+.diagram-band.dark { fill: #3b4a42; }
+.diagram-band.orange { fill: #d97a2b; }

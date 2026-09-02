@@ -211,22 +211,40 @@ export function moonPhase(date) {
     illuminated,
     waxing: elongation < 180,
     name: phaseName(elongation),
+    glyph: phaseGlyph(elongation),
     distance: moon.distance,
   };
+}
+
+// Name and glyph come off the same boundaries. Splitting them means the
+// caption and the icon can disagree — a 68 per cent waning moon labelled
+// gibbous while showing a last-quarter glyph — which is exactly what happened
+// when the glyph binned by a plain round(elongation / 45).
+const PHASES = [
+  { limit: 10, name: "Luna nueva", glyph: "🌑" },
+  { limit: 80, name: "Creciente", glyph: "🌒" },
+  { limit: 100, name: "Cuarto creciente", glyph: "🌓" },
+  { limit: 170, name: "Gibosa creciente", glyph: "🌔" },
+  { limit: 190, name: "Luna llena", glyph: "🌕" },
+  { limit: 260, name: "Gibosa menguante", glyph: "🌖" },
+  { limit: 280, name: "Cuarto menguante", glyph: "🌗" },
+  { limit: 350, name: "Menguante", glyph: "🌘" },
+  { limit: 360, name: "Luna nueva", glyph: "🌑" },
+];
+
+function phaseBucket(elongation) {
+  const e = normalizeDegrees(elongation);
+  return PHASES.find((phase) => e < phase.limit) ?? PHASES[PHASES.length - 1];
 }
 
 // Eight-point naming, with the quarters given a narrow window so "cuarto
 // creciente" means the quarter rather than anything vaguely half-lit.
 export function phaseName(elongation) {
-  const e = normalizeDegrees(elongation);
-  if (e < 10 || e >= 350) return "Luna nueva";
-  if (e < 80) return "Creciente";
-  if (e < 100) return "Cuarto creciente";
-  if (e < 170) return "Gibosa creciente";
-  if (e < 190) return "Luna llena";
-  if (e < 260) return "Gibosa menguante";
-  if (e < 280) return "Cuarto menguante";
-  return "Menguante";
+  return phaseBucket(elongation).name;
+}
+
+export function phaseGlyph(elongation) {
+  return phaseBucket(elongation).glyph;
 }
 
 // Apparent altitude of the moon's centre at rise and set. Its parallax is

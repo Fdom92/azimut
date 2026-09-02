@@ -1,5 +1,5 @@
 import { solarPosition } from "../astro/solar.js";
-import { moonHorizontal } from "../astro/lunar.js";
+import { moonHorizontal, moonPhase } from "../astro/lunar.js";
 
 // The sun's altitude across a whole day, drawn as a curve over a horizon line
 // with the twilight bands shaded underneath. The shape itself carries the
@@ -10,7 +10,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 const WIDTH = 640;
 const HEIGHT = 260;
-const PAD = { top: 16, right: 12, bottom: 28, left: 34 };
+const PAD = { top: 30, right: 12, bottom: 28, left: 34 };
 
 const ALT_MAX = 90;
 const ALT_MIN = -20;
@@ -23,6 +23,7 @@ const BANDS = [
 ];
 
 const SAMPLE_MINUTES = 10;
+
 
 function el(name, attrs = {}) {
   const node = document.createElementNS(SVG_NS, name);
@@ -176,20 +177,62 @@ export function buildSunChart(date, latitude, longitude, now = new Date()) {
     .join(" ");
   svg.append(el("path", { d: moonCurve, class: "moon-path" }));
 
-  // Marker for the current moment, only when it falls on the day drawn.
+  // Markers for the current moment, only when it falls on the day drawn.
   const sameDay = now.toDateString() === new Date(date).toDateString();
   if (sameDay) {
     const minutes = now.getHours() * 60 + now.getMinutes();
-    const { altitude } = solarPosition(now, latitude, longitude);
+
+    const sun = solarPosition(now, latitude, longitude);
+    svg.append(glyph("☀️", scaleX(minutes), scaleY(sun.altitude), sun.altitude > 0));
+
+    const moon = moonHorizontal(now, latitude, longitude);
+    const phase = moonPhase(now);
     svg.append(
-      el("circle", {
-        cx: scaleX(minutes),
-        cy: scaleY(altitude),
-        r: 6,
-        class: altitude > 0 ? "sun-now up" : "sun-now down",
-      })
+      glyph(phase.glyph, scaleX(minutes), scaleY(moon.altitude), moon.altitude > 0)
     );
   }
 
+  svg.append(legend());
   return svg;
+}
+
+// Below the horizon the marker is dimmed rather than hidden: knowing how far
+// down the sun already is matters as much as knowing it has set.
+function glyph(character, x, y, above) {
+  const text = el("text", {
+    x,
+    y: y + 6,
+    class: above ? "chart-glyph" : "chart-glyph below",
+    "text-anchor": "middle",
+  });
+  text.textContent = character;
+  return text;
+}
+
+// Without this the dashed curve reads as "the moon at night", which it is
+// not — the moon spends much of its time above the horizon in daylight, and
+// seeing that overlap is the whole point of putting both on one pair of axes.
+function legend() {
+  const group = el("g", { class: "chart-legend" });
+
+  const entries = [
+    { dash: false, label: "Sol" },
+    { dash: true, label: "Luna (todo el día, no solo de noche)" },
+  ];
+
+  let x = PAD.left;
+  for (const entry of entries) {
+    group.append(
+      el("line", {
+        x1: x, x2: x + 18, y1: 8, y2: 8,
+        class: entry.dash ? "legend-moon" : "legend-sun",
+      })
+    );
+    const label = el("text", { x: x + 24, y: 12, class: "legend-label" });
+    label.textContent = entry.label;
+    group.append(label);
+    x += 34 + entry.label.length * 5.4;
+  }
+
+  return group;
 }

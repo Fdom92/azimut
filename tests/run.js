@@ -46,6 +46,7 @@ import {
   moonHorizontal,
   moonTimes,
   phaseName,
+  phaseGlyph,
 } from "../public/js/astro/lunar.js";
 import { litPath } from "../public/js/modules/moonPhase.js";
 import { NATURE, CATEGORIES } from "../public/js/data/regions/iberia-nature.js";
@@ -481,6 +482,30 @@ test("moon: phase names line up with their elongations", () => {
   assertEqual(phaseName(270), "Cuarto menguante");
   assert(phaseName(45).includes("Creciente"));
   assert(phaseName(315).includes("Menguante"));
+});
+
+test("moon: the phase name and its glyph never disagree", () => {
+  // They used to bin independently, so a 68 per cent waning moon could be
+  // captioned gibbous while showing a last-quarter glyph.
+  const expected = {
+    "Luna nueva": "🌑",
+    "Creciente": "🌒",
+    "Cuarto creciente": "🌓",
+    "Gibosa creciente": "🌔",
+    "Luna llena": "🌕",
+    "Gibosa menguante": "🌖",
+    "Cuarto menguante": "🌗",
+    "Menguante": "🌘",
+  };
+  for (let e = 0; e < 360; e += 1) {
+    assertEqual(phaseGlyph(e), expected[phaseName(e)], `elongación ${e}°`);
+  }
+});
+
+test("moon: a waning gibbous shows a gibbous glyph, not a quarter", () => {
+  // The exact case that was wrong: 248 degrees is 68 per cent lit.
+  assertEqual(phaseName(248.3), "Gibosa menguante");
+  assertEqual(phaseGlyph(248.3), "🌖");
 });
 
 test("moon: illumination is near zero at new moon and near one at full", () => {
