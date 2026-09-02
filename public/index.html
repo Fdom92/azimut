@@ -52,6 +52,16 @@
       <span class="tile-name">Naturaleza</span>
       <span class="tile-desc">Qué hay y qué hacer</span>
     </button>
+    <button class="tile" data-tool="coords">
+      <span class="tile-icon" aria-hidden="true">📍</span>
+      <span class="tile-name">Coordenadas</span>
+      <span class="tile-desc">Tu posición en todos los formatos</span>
+    </button>
+    <button class="tile" data-tool="pace">
+      <span class="tile-icon" aria-hidden="true">🥾</span>
+      <span class="tile-name">Ritmo</span>
+      <span class="tile-desc">Cuánto tardas y si te da la luz</span>
+    </button>
   </nav>
 
   <section id="sunMoon" class="panel" hidden>
@@ -170,6 +180,16 @@
     </div>
     <div id="cloud-list"></div>
 
+    <h3>¿A qué distancia está la tormenta?</h3>
+    <div class="card">
+      <div class="row">
+        <label for="thunder-gap">Segundos</label>
+        <input id="thunder-gap" type="number" step="any" min="0" placeholder="del relámpago al trueno">
+      </div>
+      <div id="storm-scale"></div>
+      <p id="storm-distance" class="reading">—</p>
+    </div>
+
     <h3>Otras señales</h3>
     <div id="sign-list"></div>
 
@@ -184,6 +204,51 @@
     <div id="nature-list"></div>
     <h3>Fuentes</h3>
     <ul id="nature-sources" class="events"></ul>
+  </section>
+
+  <section id="coords" class="panel" hidden>
+    <h2>Coordenadas</h2>
+    <p class="lead">
+      La misma posición escrita de las cinco formas. Al pedir ayuda, lo que
+      decide es dar el formato que la otra persona está apuntando.
+    </p>
+    <div id="coords-position" class="position-bar"></div>
+    <div id="coords-result"></div>
+  </section>
+
+  <section id="pace" class="panel" hidden>
+    <h2>Ritmo de marcha</h2>
+
+    <form id="pace-form" class="controls">
+      <div class="row">
+        <label for="dist">Distancia</label>
+        <input id="dist" type="number" step="any" min="0" placeholder="km" required>
+      </div>
+      <div class="row">
+        <label for="ascent">Desnivel +</label>
+        <input id="ascent" type="number" step="any" min="0" placeholder="m" value="0">
+      </div>
+      <div class="row">
+        <label for="descent">Desnivel −</label>
+        <input id="descent" type="number" step="any" min="0" placeholder="m" value="0">
+      </div>
+      <div class="row">
+        <label for="pace-factor">Ritmo</label>
+        <select id="pace-factor"></select>
+      </div>
+      <div class="actions">
+        <button type="submit">Calcular</button>
+      </div>
+    </form>
+
+    <div id="pace-result" class="result"></div>
+
+    <div class="card warn">
+      <p><strong>Naismith es una estimación, no un horario.</strong> Supone
+      andar sin parar, terreno decente y tiempo decente. Se queda corta con
+      facilidad — por eso está el selector de ritmo, y por eso conviene
+      dejar margen sobre lo que salga.</p>
+    </div>
   </section>
 
   <section id="knots" class="panel" hidden>

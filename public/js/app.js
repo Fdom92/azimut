@@ -46,6 +46,17 @@ import {
   DISCLAIMER as NATURE_DISCLAIMER,
 } from "./modules/nature.js";
 import { diagramFor } from "./modules/natureDiagrams.js";
+import { allFormats, toMGRS } from "./geo/coordinates.js";
+import { mgrsAnatomy, stormScale } from "./modules/coordDiagram.js";
+import { buildPaceChart, buildBreakdown } from "./modules/paceChart.js";
+import {
+  estimateMinutes,
+  descentAdjustmentMinutes,
+  daylightCheck,
+  formatMinutes,
+  PACE_FACTORS,
+} from "./modules/pace.js";
+import { stormDistanceKm, stormVerdict } from "./modules/weather.js";
 
 const home = document.getElementById("home");
 const backBtn = document.getElementById("back");
@@ -78,6 +89,7 @@ for (const tile of document.querySelectorAll(".tile[data-tool]")) {
     const tool = tile.dataset.tool;
     showTool(tool);
     if (tool === "sunMoon") openSunMoon();
+    if (tool === "coords") openCoords();
     if (tool === "orient") {
       renderOrientationPosition();
       renderOrientation();
@@ -335,32 +347,11 @@ function currentPosition() {
 }
 
 function renderOrientationPosition() {
-  const bar = document.getElementById("orient-position");
-  const position = currentPosition();
-  bar.replaceChildren();
-
-  const label = document.createElement("span");
-  label.textContent = position
-    ? `Posición: ${position.lat.toFixed(3)}, ${position.lon.toFixed(3)}`
-    : "Sin posición — los métodos solares la necesitan";
-  if (!position) label.className = "muted";
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "link";
-  button.textContent = position ? "actualizar" : "Usar mi posición";
-  button.addEventListener("click", () => {
-    button.textContent = "buscando…";
-    requestPosition({
-      onDone: () => {
-        renderOrientationPosition();
-        renderOrientation();
-        refreshCompass();
-      },
-    });
+  positionBar(document.getElementById("orient-position"), () => {
+    renderOrientationPosition();
+    renderOrientation();
+    refreshCompass();
   });
-
-  bar.append(label, button);
 }
 
 function renderOrientation() {
@@ -882,6 +873,225 @@ document.getElementById("nature-sources").replaceChildren(
     return li;
   })
 );
+
+// ---- Coordinates ----
+
+const coordsResult = document.getElementById("coords-result");
+
+function openCoords() {
+  renderCoordsPosition();
+  if (currentPosition()) return renderCoords();
+
+  coordsResult.replaceChildren(notice("Buscando tu posición…"));
+  requestPosition({
+    onDone: (ok) => {
+      renderCoordsPosition();
+      if (ok) return renderCoords();
+      coordsResult.replaceChildren(
+        notice("Sin posición. Métela en Sol y luna o toca «Usar mi posición».")
+      );
+    },
+  });
+}
+
+function renderCoordsPosition() {
+  positionBar(document.getElementById("coords-position"), () => {
+    renderCoordsPosition();
+    renderCoords();
+  });
+}
+
+function renderCoords() {
+  const position = currentPosition();
+  coordsResult.replaceChildren();
+  if (!position) return;
+
+  const mgrs = toMGRS(position.lat, position.lon);
+  if (mgrs) {
+    const explainer = document.createElement("div");
+    explainer.className = "card";
+    const heading = document.createElement("h4");
+    heading.textContent = "Cómo se lee una referencia";
+    explainer.append(heading, mgrsAnatomy(mgrs));
+    coordsResult.append(explainer);
+  }
+
+  const formats = allFormats(position.lat, position.lon);
+  for (const key of ["decimal", "ddm", "dms", "utm", "mgrs"]) {
+    const format = formats[key];
+    if (!format) continue;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const heading = document.createElement("h4");
+    heading.textContent = format.label;
+
+    const value = document.createElement("p");
+    value.className = "coord-value";
+    value.textContent = format.value;
+
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = format.note;
+
+    card.append(heading, value, note);
+    coordsResult.append(card);
+  }
+}
+
+// One position control, rendered wherever a panel needs it.
+function positionBar(bar, onUpdate) {
+  const position = currentPosition();
+  bar.replaceChildren();
+
+  const label = document.createElement("span");
+  label.textContent = position
+    ? `Posición: ${position.lat.toFixed(3)}, ${position.lon.toFixed(3)}`
+    : "Sin posición";
+  if (!position) label.className = "muted";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "link";
+  button.textContent = position ? "actualizar" : "Usar mi posición";
+  button.addEventListener("click", () => {
+    button.textContent = "buscando…";
+    requestPosition({ onDone: () => onUpdate() });
+  });
+
+  bar.append(label, button);
+}
+
+// ---- Pace ----
+
+const paceForm = document.getElementById("pace-form");
+const paceSelect = document.getElementById("pace-factor");
+const paceResult = document.getElementById("pace-result");
+
+for (const option of PACE_FACTORS) {
+  const node = document.createElement("option");
+  node.value = String(option.factor);
+  node.textContent = option.label;
+  if (option.id === "normal") node.selected = true;
+  paceSelect.append(node);
+}
+
+paceForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const distanceKm = Number(document.getElementById("dist").value);
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+    paceResult.replaceChildren(notice("Introduce una distancia mayor que cero."));
+    return;
+  }
+
+  const minutes = estimateMinutes({
+    distanceKm,
+    ascentMetres: Number(document.getElementById("ascent").value) || 0,
+    descentMetres: Number(document.getElementById("descent").value) || 0,
+    factor: Number(paceSelect.value),
+  });
+
+  paceResult.replaceChildren();
+
+  const summary = document.createElement("dl");
+  summary.className = "summary";
+  addPair(summary, "Tiempo estimado", formatMinutes(minutes));
+  paceResult.append(summary);
+
+  const factor = Number(paceSelect.value);
+  const ascent = Number(document.getElementById("ascent").value) || 0;
+  const descent = Number(document.getElementById("descent").value) || 0;
+  const breakdown = buildBreakdown({
+    flatMinutes: distanceKm * 12 * factor,
+    climbMinutes: (ascent / 100) * 10 * factor,
+    descentMinutes: Math.max(0, descentAdjustmentMinutes(descent, distanceKm) * factor),
+  });
+  if (breakdown) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const heading = document.createElement("h4");
+    heading.textContent = "En qué se va el tiempo";
+    card.append(heading, breakdown);
+    paceResult.append(card);
+  }
+
+  const position = currentPosition();
+  if (!position) {
+    paceResult.append(
+      notice("Con una posición puesta, además te digo si llegas antes de que anochezca.")
+    );
+    return;
+  }
+
+  const light = daylightCheck({
+    start: new Date(),
+    minutes,
+    latitude: position.lat,
+    longitude: position.lon,
+  });
+
+  const card = document.createElement("div");
+  card.className = light.verdict === "dark" ? "card warn" : "card";
+
+  const heading = document.createElement("h4");
+  heading.textContent = `Llegada estimada: ${formatTime(light.arrival)}`;
+  card.append(heading);
+
+  if (light.sunset) {
+    card.append(
+      buildPaceChart({
+        start: new Date(),
+        arrival: light.arrival,
+        sunset: light.sunset,
+        civilDusk: light.civilDusk,
+      })
+    );
+  }
+
+  if (light.verdict) {
+    const verdicts = {
+      comfortable: `Con luz de sobra: el ocaso es a las ${formatTime(light.sunset)}.`,
+      tight: `Justo. El sol se pone a las ${formatTime(light.sunset)} y a las ${formatTime(light.civilDusk)} ya necesitas frontal. Sales con ${Math.round(light.marginToDusk)} min de margen.`,
+      dark: `Llegas de noche. A las ${formatTime(light.civilDusk)} se acaba la luz útil, ${Math.round(-light.marginToDusk)} min antes de tu llegada. Lleva frontal o recorta.`,
+    };
+    const p = document.createElement("p");
+    p.textContent = verdicts[light.verdict];
+    card.append(p);
+  }
+
+  paceResult.append(card);
+});
+
+// ---- Storm distance ----
+
+const thunderGap = document.getElementById("thunder-gap");
+const stormOutput = document.getElementById("storm-distance");
+
+thunderGap.addEventListener("input", () => {
+  const raw = thunderGap.value.trim();
+  if (raw === "") {
+    stormOutput.textContent = "—";
+    stormOutput.className = "reading";
+    return;
+  }
+
+  const km = stormDistanceKm(Number(raw));
+  if (km == null) {
+    stormOutput.textContent = "—";
+    stormOutput.className = "reading";
+    return;
+  }
+
+  const verdict = stormVerdict(km);
+  stormOutput.textContent = verdict.text;
+  stormOutput.className = `reading ${verdict.level}`;
+
+  stormScaleMount.replaceChildren(stormScale(km));
+});
+
+const stormScaleMount = document.getElementById("storm-scale");
 
 renderSaved();
 

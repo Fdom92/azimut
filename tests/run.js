@@ -50,6 +50,21 @@ import {
 } from "../public/js/astro/lunar.js";
 import { litPath } from "../public/js/modules/moonPhase.js";
 import { parseLatitude, parseLongitude } from "../public/js/modules/sunMoon.js";
+import {
+  toUTM,
+  fromUTM,
+  toMGRS,
+  utmZone,
+  latitudeBand,
+  toDMS,
+  toDDM,
+} from "../public/js/geo/coordinates.js";
+import {
+  estimateMinutes,
+  descentAdjustmentMinutes,
+  daylightCheck,
+} from "../public/js/modules/pace.js";
+import { stormDistanceKm, stormVerdict } from "../public/js/modules/weather.js";
 import { NATURE, CATEGORIES } from "../public/js/data/regions/iberia-nature.js";
 import {
   byCategory,
@@ -713,6 +728,177 @@ test("coords input: junk and out-of-range values are rejected", () => {
 test("coords input: ordinary values parse, decimals included", () => {
   assertClose(parseLatitude("40.4168"), 40.4168, 1e-9);
   assertClose(parseLongitude("-3.7038"), -3.7038, 1e-9);
+});
+
+// ---- Coordinate conversion ----
+//
+// The round trip is the test that holds the whole chain: Snyder's forward and
+// inverse series are independent bodies of code, so agreeing to a centimetre
+// across the globe is not something two matching mistakes would produce.
+
+test("utm: converting out and back lands where it started", () => {
+  const places = [
+    [40.4168, -3.7038],   // Madrid
+    [43.3623, -8.4115],   // A Coruña
+    [-33.8688, 151.2093], // Sydney, southern hemisphere
+    [64.1466, -21.9426],  // Reykjavík, high latitude
+    [0.3476, 32.5825],    // Kampala, on the equator
+    [-54.8019, -68.3030], // Ushuaia, far south
+  ];
+
+  for (const [lat, lon] of places) {
+    const utm = toUTM(lat, lon);
+    const back = fromUTM(utm);
+    // A centimetre is roughly 1e-7 degrees of latitude.
+    assertClose(back.latitude, lat, 1e-6, `latitud de vuelta en ${lat}, ${lon}`);
+    assertClose(back.longitude, lon, 1e-6, `longitud de vuelta en ${lat}, ${lon}`);
+  }
+});
+
+test("utm: zones and bands come out where they should", () => {
+  assertEqual(utmZone(40.4168, -3.7038), 30, "Madrid está en la zona 30");
+  assertEqual(latitudeBand(40.4168), "T", "y en la banda T");
+  assertEqual(utmZone(-33.8688, 151.2093), 56, "Sídney en la 56");
+  assertEqual(latitudeBand(-33.8688), "H");
+});
+
+test("utm: the Norway and Svalbard exceptions are honoured", () => {
+  // Southern Norway widens zone 32 at the expense of 31.
+  assertEqual(utmZone(60, 5), 32, "Bergen cae en la 32, no en la 31");
+  // Svalbard skips the even zones entirely.
+  assertEqual(utmZone(78, 15), 33, "Svalbard salta de la 31 a la 33");
+  assertEqual(utmZone(78, 25), 35);
+});
+
+test("utm: easting stays near the false origin and northing grows northward", () => {
+  const equator = toUTM(0, -3);
+  assertClose(equator.northing, 0, 1, "el ecuador es el cero de northing");
+
+  const madrid = toUTM(40.4168, -3.7038);
+  assert(madrid.easting > 100000 && madrid.easting < 900000, "easting dentro de la zona");
+  assert(madrid.northing > 4400000 && madrid.northing < 4500000, "northing de Madrid");
+
+  // South of the equator the false northing kicks in.
+  const sydney = toUTM(-33.8688, 151.2093);
+  assert(sydney.northing > 6000000, "hemisferio sur usa el falso origen de 10.000 km");
+  assertEqual(sydney.hemisphere, "S");
+});
+
+test("utm: latitude bands skip I and O", () => {
+  const bands = new Set();
+  for (let lat = -80; lat < 84; lat += 0.5) bands.add(latitudeBand(lat));
+  assert(!bands.has("I"), "la banda I no existe");
+  assert(!bands.has("O"), "la banda O no existe");
+  assertEqual(latitudeBand(85), null, "fuera del rango UTM");
+  assertEqual(latitudeBand(-81), null);
+});
+
+test("mgrs: the reference is well formed and its square letters avoid I and O", () => {
+  const mgrs = toMGRS(40.4168, -3.7038);
+  assertEqual(mgrs.zone, 30);
+  assertEqual(mgrs.band, "T");
+  assertEqual(mgrs.square.length, 2);
+  assert(!mgrs.square.includes("I") && !mgrs.square.includes("O"), "sin I ni O");
+  assert(/^\d+[A-Z] [A-Z]{2} \d{5} \d{5}$/.test(mgrs.text), `formato inesperado: ${mgrs.text}`);
+});
+
+test("mgrs: never emits I or O anywhere on the globe", () => {
+  for (let lat = -78; lat < 82; lat += 7) {
+    for (let lon = -177; lon < 180; lon += 13) {
+      const mgrs = toMGRS(lat, lon);
+      if (!mgrs) continue;
+      assert(
+        !mgrs.square.includes("I") && !mgrs.square.includes("O"),
+        `${lat}, ${lon} produjo ${mgrs.square}`
+      );
+    }
+  }
+});
+
+test("dms and ddm: the pieces recombine into the original value", () => {
+  for (const value of [40.4168, -3.7038, 0, -54.8019, 64.1466]) {
+    const { degrees, minutes, seconds } = toDMS(value, "lat");
+    const rebuilt = (degrees + minutes / 60 + seconds / 3600) * Math.sign(value || 1);
+    assertClose(rebuilt, value, 1e-9, `DMS de ${value}`);
+
+    const ddm = toDDM(value, "lat");
+    const rebuiltDdm = (ddm.degrees + ddm.minutes / 60) * Math.sign(value || 1);
+    assertClose(rebuiltDdm, value, 1e-9, `DDM de ${value}`);
+  }
+});
+
+test("dms: west is W, not O, so it cannot be misread as a zero", () => {
+  assertEqual(toDMS(40, "lat").hemisphere, "N");
+  assertEqual(toDMS(-40, "lat").hemisphere, "S");
+  assertEqual(toDMS(3, "lon").hemisphere, "E");
+  // Spanish maps write O for Oeste, but these readouts sit in a monospaced
+  // face beside digits and get dictated over a radio.
+  assertEqual(toDMS(-3, "lon").hemisphere, "W");
+});
+
+// ---- Pace ----
+
+test("pace: Naismith's two rates are what the estimate is built from", () => {
+  // Five kilometres flat is one hour.
+  assertClose(estimateMinutes({ distanceKm: 5 }), 60, 1e-9);
+  // Six hundred metres of climb is another hour, on its own.
+  assertClose(estimateMinutes({ distanceKm: 0, ascentMetres: 600 }), 60, 1e-9);
+  // And they add.
+  assertClose(estimateMinutes({ distanceKm: 5, ascentMetres: 600 }), 120, 1e-9);
+});
+
+test("pace: the pace factor scales the whole estimate", () => {
+  const base = estimateMinutes({ distanceKm: 10, ascentMetres: 600 });
+  assertClose(estimateMinutes({ distanceKm: 10, ascentMetres: 600, factor: 1.5 }), base * 1.5, 1e-9);
+});
+
+test("pace: Langmuir gives time back on gentle descent and takes it on steep", () => {
+  // 300 m down over 10 km is about 1.7 degrees — too flat to correct.
+  assertEqual(descentAdjustmentMinutes(300, 10), 0);
+  // 600 m over 4 km is about 8.5 degrees: gentle, so faster.
+  assert(descentAdjustmentMinutes(600, 4) < 0, "descenso suave gana tiempo");
+  // 900 m over 2 km is about 24 degrees: steep, so slower.
+  assert(descentAdjustmentMinutes(900, 2) > 0, "descenso fuerte cuesta tiempo");
+});
+
+test("pace: an estimate never comes out negative", () => {
+  assert(estimateMinutes({ distanceKm: 1, descentMetres: 5000 }) >= 0);
+});
+
+test("pace: the daylight verdict tracks how much light is left", () => {
+  const madrid = { lat: 40.4168, lon: -3.7038 };
+  // Start at first light on a long summer day.
+  const start = new Date("2026-06-21T06:00:00Z");
+
+  const short = daylightCheck({ start, minutes: 120, ...toArgs(madrid) });
+  assertEqual(short.verdict, "comfortable", "dos horas en junio sobran");
+
+  const long = daylightCheck({ start, minutes: 20 * 60, ...toArgs(madrid) });
+  assertEqual(long.verdict, "dark", "veinte horas no caben en ningún día");
+});
+
+function toArgs({ lat, lon }) {
+  return { latitude: lat, longitude: lon };
+}
+
+// ---- Storm distance ----
+
+test("storm: three seconds is one kilometre", () => {
+  assertClose(stormDistanceKm(3), 1, 1e-9);
+  assertClose(stormDistanceKm(30), 10, 1e-9);
+  assertClose(stormDistanceKm(0), 0, 1e-9, "el rayo encima cuenta cero");
+});
+
+test("storm: nonsense input gives nothing rather than a number", () => {
+  for (const junk of [-1, NaN, Infinity, "abc"]) {
+    assertEqual(stormDistanceKm(junk), null, `${junk} no es un intervalo`);
+  }
+});
+
+test("storm: the verdict escalates as the gap shortens", () => {
+  assertEqual(stormVerdict(stormDistanceKm(3)).level, "danger", "1 km: encima");
+  assertEqual(stormVerdict(stormDistanceKm(20)).level, "caution", "6.7 km: cerca");
+  assertEqual(stormVerdict(stormDistanceKm(60)).level, "watch", "20 km: lejos");
 });
 
 // ---- Nature ----
