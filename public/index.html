@@ -32,48 +32,62 @@
 </header>
 
 <main>
-  <nav id="home" class="grid" aria-label="Herramientas">
-    <button class="tile" data-tool="sunMoon">
-      <span class="tile-icon" aria-hidden="true">☀️</span>
-      <span class="tile-name">Sol y luna</span>
-      <span class="tile-desc">Orto, ocaso y fase lunar</span>
-    </button>
-    <button class="tile" data-tool="orient">
-      <span class="tile-icon" aria-hidden="true">🧭</span>
-      <span class="tile-name">Orientación</span>
-      <span class="tile-desc">Encontrar el norte</span>
-    </button>
-    <button class="tile" data-tool="knots">
-      <span class="tile-icon" aria-hidden="true">🪢</span>
-      <span class="tile-name">Nudos</span>
-      <span class="tile-desc">Encordar, unir, bloquear</span>
-    </button>
-    <button class="tile urgent" data-tool="distress">
-      <span class="tile-icon" aria-hidden="true">🆘</span>
-      <span class="tile-name">Socorro</span>
-      <span class="tile-desc">Señal alpina y SOS</span>
-    </button>
-    <button class="tile" data-tool="weather">
-      <span class="tile-icon" aria-hidden="true">☁️</span>
-      <span class="tile-name">Meteo</span>
-      <span class="tile-desc">Leer las nubes</span>
-    </button>
-    <button class="tile" data-tool="nature">
-      <span class="tile-icon" aria-hidden="true">🌿</span>
-      <span class="tile-name">Naturaleza</span>
-      <span class="tile-desc">Qué hay y qué hacer</span>
-    </button>
-    <button class="tile" data-tool="coords">
-      <span class="tile-icon" aria-hidden="true">📍</span>
-      <span class="tile-name">Coordenadas</span>
-      <span class="tile-desc">Tu posición en todos los formatos</span>
-    </button>
-    <button class="tile" data-tool="pace">
-      <span class="tile-icon" aria-hidden="true">🥾</span>
-      <span class="tile-name">Ritmo</span>
-      <span class="tile-desc">Cuánto tardas y si te da la luz</span>
-    </button>
-  </nav>
+  <div id="home">
+    <!-- Emergencies come first because that is the one case where scrolling
+         is a cost you cannot pay. -->
+    <h2 class="section-title urgent">Emergencias</h2>
+    <nav class="grid" aria-label="Emergencias">
+      <button class="tile urgent" data-tool="distress">
+        <span class="tile-icon" aria-hidden="true">🆘</span>
+        <span class="tile-name">Socorro</span>
+        <span class="tile-desc">Señal alpina y SOS</span>
+      </button>
+      <button class="tile urgent" data-tool="storm">
+        <span class="tile-icon" aria-hidden="true">⛈️</span>
+        <span class="tile-name">Tormenta</span>
+        <span class="tile-desc">A qué distancia y qué hacer</span>
+      </button>
+    </nav>
+
+    <h2 class="section-title">Herramientas</h2>
+    <nav class="grid" aria-label="Herramientas">
+      <button class="tile" data-tool="sunMoon">
+        <span class="tile-icon" aria-hidden="true">☀️</span>
+        <span class="tile-name">Sol y luna</span>
+        <span class="tile-desc">Orto, ocaso y fase lunar</span>
+      </button>
+      <button class="tile" data-tool="orient">
+        <span class="tile-icon" aria-hidden="true">🧭</span>
+        <span class="tile-name">Orientación</span>
+        <span class="tile-desc">Encontrar el norte</span>
+      </button>
+      <button class="tile" data-tool="coords">
+        <span class="tile-icon" aria-hidden="true">📍</span>
+        <span class="tile-name">Coordenadas</span>
+        <span class="tile-desc">Tu posición en todos los formatos</span>
+      </button>
+      <button class="tile" data-tool="pace">
+        <span class="tile-icon" aria-hidden="true">🥾</span>
+        <span class="tile-name">Ritmo</span>
+        <span class="tile-desc">Cuánto tardas y si te da la luz</span>
+      </button>
+      <button class="tile" data-tool="weather">
+        <span class="tile-icon" aria-hidden="true">☁️</span>
+        <span class="tile-name">Meteo</span>
+        <span class="tile-desc">Leer las nubes</span>
+      </button>
+      <button class="tile" data-tool="knots">
+        <span class="tile-icon" aria-hidden="true">🪢</span>
+        <span class="tile-name">Nudos</span>
+        <span class="tile-desc">Encordar, unir, bloquear</span>
+      </button>
+      <button class="tile" data-tool="nature">
+        <span class="tile-icon" aria-hidden="true">🌿</span>
+        <span class="tile-name">Naturaleza</span>
+        <span class="tile-desc">Qué hay y qué hacer</span>
+      </button>
+    </nav>
+  </div>
 
   <section id="sunMoon" class="panel" hidden>
     <h2>Sol y luna</h2>
@@ -168,6 +182,37 @@
     <ul id="whistle-codes" class="events"></ul>
   </section>
 
+  <section id="storm" class="panel" hidden>
+    <h2>Tormenta</h2>
+
+    <div class="card">
+      <h3>¿A qué distancia está?</h3>
+      <p class="hint" style="margin-top:0">
+        Cuenta los segundos desde el relámpago hasta el trueno.
+      </p>
+      <div class="row">
+        <label for="thunder-gap">Segundos</label>
+        <input id="thunder-gap" type="number" step="any" min="0" inputmode="decimal" placeholder="del relámpago al trueno">
+      </div>
+      <div id="storm-scale"></div>
+      <p id="storm-distance" class="reading">—</p>
+    </div>
+
+    <div class="card warn">
+      <h3>Qué hacer</h3>
+      <ol id="storm-actions"></ol>
+    </div>
+
+    <div class="card">
+      <h3>Cómo se reconoce</h3>
+      <p id="storm-cloud"></p>
+      <p class="hint">
+        Si el intervalo entre relámpago y trueno se acorta, la tormenta viene
+        hacia ti. Ese es el dato que decide, más que la distancia suelta.
+      </p>
+    </div>
+  </section>
+
   <section id="weather" class="panel" hidden>
     <h2>Señales de meteo</h2>
     <p class="lead">
@@ -177,8 +222,9 @@
     </p>
 
     <div class="card warn">
-      <h3>Tormenta: qué hacer</h3>
-      <ol id="storm-actions"></ol>
+      <p style="margin-bottom:12px"><strong>¿Tormenta ahora?</strong> Lo urgente
+      —a qué distancia está y qué hacer— está en su propio módulo.</p>
+      <button type="button" id="go-storm">Abrir Tormenta</button>
     </div>
 
     <h3>Dónde se forma cada una</h3>
@@ -190,16 +236,6 @@
       <button type="button" id="by-severity" class="toggle">Por gravedad</button>
     </div>
     <div id="cloud-list"></div>
-
-    <h3>¿A qué distancia está la tormenta?</h3>
-    <div class="card">
-      <div class="row">
-        <label for="thunder-gap">Segundos</label>
-        <input id="thunder-gap" type="number" step="any" min="0" placeholder="del relámpago al trueno">
-      </div>
-      <div id="storm-scale"></div>
-      <p id="storm-distance" class="reading">—</p>
-    </div>
 
     <h3>Otras señales</h3>
     <div id="sign-list"></div>

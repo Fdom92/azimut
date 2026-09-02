@@ -645,6 +645,18 @@ signList.replaceChildren(
   })
 );
 
+// The storm panel borrows the cumulonimbus entry rather than restating it, so
+// there is one description to keep right instead of two that can drift.
+const cumulonimbus = CLOUDS.find((cloud) => cloud.code === "Cb");
+if (cumulonimbus) {
+  document.getElementById("storm-cloud").textContent =
+    `${cumulonimbus.appearance} ${cumulonimbus.indicates}`;
+}
+
+document.getElementById("go-storm").addEventListener("click", () => {
+  showTool("storm");
+});
+
 document.getElementById("storm-actions").replaceChildren(
   ...stormActions().map((action) => {
     const li = document.createElement("li");

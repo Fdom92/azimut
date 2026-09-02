@@ -791,3 +791,20 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 
 .position-manual button:hover { border-color: var(--accent); }
+
+/* ---- Home sections ---- */
+
+.section-title {
+  margin: var(--gap-lg) 0 var(--gap-sm);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.section-title:first-of-type { margin-top: var(--gap-sm); }
+.section-title.urgent { color: var(--danger); }
+
+#home .grid { padding-bottom: 0; }
+#home > nav:last-of-type { padding-bottom: var(--gap-xl); }
