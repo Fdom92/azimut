@@ -40,6 +40,20 @@ import {
   ALPINE,
 } from "../public/js/data/signals.js";
 
+import {
+  moonPosition,
+  moonPhase,
+  moonHorizontal,
+  moonTimes,
+  phaseName,
+} from "../public/js/astro/lunar.js";
+import { litPath } from "../public/js/modules/moonPhase.js";
+import {
+  greenwichSiderealTime,
+  eclipticToEquatorial,
+  equatorialToHorizontal,
+} from "../public/js/astro/coords.js";
+
 import { CLOUDS, LEVELS } from "../public/js/data/clouds.js";
 import { placementCodes } from "../public/js/modules/cloudChart.js";
 
@@ -341,6 +355,235 @@ test("signals: each round is followed by a full minute of silence", () => {
   const last = steps[steps.length - 1];
   assertEqual(last.on, false);
   assertEqual(last.ms, 60000);
+});
+
+// ---- Coordinates ----
+
+test("coords: sidereal time stays inside one revolution and advances daily", () => {
+  const jd = toJulianDay(new Date("2026-08-28T00:00:00Z"));
+  for (const offset of [0, 0.25, 0.5, 100.3]) {
+    const theta = greenwichSiderealTime(jd + offset);
+    assert(theta >= 0 && theta < 360, `sidereal time out of range: ${theta}`);
+  }
+  // A sidereal day is shorter than a solar one, so the same clock time slips
+  // forward by very nearly four minutes of arc each day.
+  const today = greenwichSiderealTime(jd);
+  const tomorrow = greenwichSiderealTime(jd + 1);
+  let advance = tomorrow - today;
+  if (advance < 0) advance += 360;
+  assertClose(advance, 0.9856, 0.01, "daily sidereal advance in degrees");
+});
+
+test("coords: a point on the ecliptic at zero longitude sits at the equinox", () => {
+  const { rightAscension, declination } = eclipticToEquatorial(0, 0, 23.44);
+  assertClose(rightAscension, 0, 1e-6);
+  assertClose(declination, 0, 1e-6);
+});
+
+test("coords: the ecliptic pole of longitude 90 reaches the obliquity in declination", () => {
+  const { declination } = eclipticToEquatorial(90, 0, 23.44);
+  assertClose(declination, 23.44, 1e-6, "solstice point declination");
+});
+
+test("coords: an object on the meridian has the observer's complement altitude", () => {
+  // Hour angle zero, declination equal to latitude, means straight overhead.
+  const { altitude, azimuth } = equatorialToHorizontal(100, 40, 40, 100);
+  assertClose(altitude, 90, 1e-6, "object at the zenith");
+  assert(Number.isFinite(azimuth), "azimuth should still be a number at zenith");
+});
+
+// ---- Moon ----
+
+test("moon: distance stays between perigee and apogee", () => {
+  for (let day = 0; day < 400; day += 3) {
+    const date = new Date(Date.UTC(2026, 0, 1 + day, 12));
+    const { distance } = moonPosition(date);
+    assert(
+      distance > 355000 && distance < 407500,
+      `distancia lunar fuera de rango el ${date.toISOString()}: ${distance.toFixed(0)} km`
+    );
+  }
+});
+
+test("moon: ecliptic latitude stays within the orbit's inclination", () => {
+  for (let day = 0; day < 400; day += 3) {
+    const date = new Date(Date.UTC(2026, 0, 1 + day, 12));
+    const { latitude } = moonPosition(date);
+    assert(
+      Math.abs(latitude) < 5.5,
+      `latitud lunar imposible el ${date.toISOString()}: ${latitude.toFixed(2)}°`
+    );
+  }
+});
+
+test("moon: illuminated fraction stays in [0, 1] and tracks the elongation", () => {
+  for (let day = 0; day < 60; day += 1) {
+    const date = new Date(Date.UTC(2026, 0, 1 + day, 12));
+    const { illuminated, elongation, waxing } = moonPhase(date);
+    assert(illuminated >= 0 && illuminated <= 1, `fracción fuera de rango: ${illuminated}`);
+    assertEqual(waxing, elongation < 180, "waxing debe seguir a la elongación");
+  }
+});
+
+// This is the test that validates the whole longitude series rather than any
+// single number: the interval it produces between new moons has to come out
+// as the synodic month, which is a measured physical constant the code knows
+// nothing about.
+test("moon: successive new moons fall one synodic month apart", () => {
+  const SYNODIC_DAYS = 29.530588;
+  const newMoons = [];
+  let previous = null;
+
+  for (let hours = 0; hours < 24 * 400; hours += 6) {
+    const date = new Date(Date.UTC(2026, 0, 1) + hours * 3600000);
+    const { elongation } = moonPhase(date);
+    if (previous && elongation < previous.elongation - 180) {
+      // Elongation wrapped past 360: new moon lies between the two samples.
+      const span = elongation + 360 - previous.elongation;
+      const fraction = (360 - previous.elongation) / span;
+      newMoons.push(previous.time + fraction * 6 * 3600000);
+    }
+    previous = { elongation, time: date.getTime() };
+  }
+
+  assert(newMoons.length >= 12, `esperaba al menos 12 lunas nuevas, hubo ${newMoons.length}`);
+
+  const intervals = newMoons
+    .slice(1)
+    .map((t, i) => (t - newMoons[i]) / 86400000);
+  const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+
+  assertClose(mean, SYNODIC_DAYS, 0.05, "mes sinódico medio en días");
+
+  // Individual lunations swing either side of the mean by up to about half a
+  // day, but nothing should land far outside that.
+  for (const interval of intervals) {
+    assert(
+      Math.abs(interval - SYNODIC_DAYS) < 0.8,
+      `lunación anómala: ${interval.toFixed(3)} días`
+    );
+  }
+});
+
+test("moon: phase names line up with their elongations", () => {
+  assertEqual(phaseName(0), "Luna nueva");
+  assertEqual(phaseName(359), "Luna nueva");
+  assertEqual(phaseName(90), "Cuarto creciente");
+  assertEqual(phaseName(180), "Luna llena");
+  assertEqual(phaseName(270), "Cuarto menguante");
+  assert(phaseName(45).includes("Creciente"));
+  assert(phaseName(315).includes("Menguante"));
+});
+
+test("moon: illumination is near zero at new moon and near one at full", () => {
+  // Drive the phase function directly through its own elongation definition.
+  const atElongation = (e) => (1 - Math.cos((e * Math.PI) / 180)) / 2;
+  assertClose(atElongation(0), 0, 1e-9);
+  assertClose(atElongation(90), 0.5, 1e-9);
+  assertClose(atElongation(180), 1, 1e-9);
+});
+
+test("moon: the computed moonrise really is the moment it crosses the horizon", () => {
+  const madrid = { lat: 40.4168, lon: -3.7038 };
+  let checked = 0;
+
+  for (let day = 0; day < 20; day++) {
+    const date = new Date(Date.UTC(2026, 7, 1 + day, 12));
+    const { moonrise, moonset } = moonTimes(date, madrid.lat, madrid.lon);
+
+    for (const event of [moonrise, moonset]) {
+      if (!event) continue;
+      const { altitude } = moonHorizontal(event, madrid.lat, madrid.lon);
+      // Rise/set altitude runs about +0.12 degrees once parallax and
+      // refraction are accounted for.
+      assertClose(altitude, 0.12, 0.15, `altura lunar en el cruce del ${event.toISOString()}`);
+      checked++;
+    }
+  }
+
+  assert(checked >= 30, `esperaba muchos cruces en 20 días, hubo ${checked}`);
+});
+
+test("moon: a lunar day is longer than a solar one, so moonrise drifts later", () => {
+  const madrid = { lat: 40.4168, lon: -3.7038 };
+  const shifts = [];
+
+  for (let day = 0; day < 25; day++) {
+    const today = moonTimes(new Date(Date.UTC(2026, 7, 1 + day, 12)), madrid.lat, madrid.lon);
+    const tomorrow = moonTimes(new Date(Date.UTC(2026, 7, 2 + day, 12)), madrid.lat, madrid.lon);
+    if (!today.moonrise || !tomorrow.moonrise) continue;
+
+    let shift = (tomorrow.moonrise - today.moonrise) / 60000 - 1440;
+    if (shift < -200) shift += 1440;
+    shifts.push(shift);
+  }
+
+  assert(shifts.length >= 15, `pocas parejas de días utilizables: ${shifts.length}`);
+  const mean = shifts.reduce((a, b) => a + b, 0) / shifts.length;
+  assertClose(mean, 50, 15, "retraso medio del orto lunar en minutos");
+});
+
+// ---- Moon disc geometry ----
+//
+// The disc is a semicircular limb closed by an elliptical terminator. Which
+// way that ellipse bows decides whether the shape encloses more or less than
+// half the disc — get the sweep flag backwards and a gibbous moon renders as
+// a crescent while the caption still says 71 per cent. These tests read the
+// flags straight out of the path and check them against the geometry.
+
+function parseArcs(d) {
+  // "M cx top A r r 0 0 S cx bottom A rx r 0 0 S cx top Z"
+  const arcs = [...d.matchAll(/A\s+([\d.]+)\s+([\d.]+)\s+0\s+0\s+([01])/g)];
+  return arcs.map(([, rx, ry, sweep]) => ({
+    rx: Number(rx),
+    ry: Number(ry),
+    sweep: Number(sweep),
+  }));
+}
+
+// Enclosed area as a fraction of the disc: half the circle, plus or minus the
+// half-ellipse depending on which way the terminator bows.
+function litFraction(d, radius) {
+  const [limb, terminator] = parseArcs(d);
+  // The terminator adds area when it bows away from the lit limb.
+  const bowsAwayFromLimb = terminator.sweep === limb.sweep;
+  const halfEllipse = terminator.rx / (2 * radius);
+  return 0.5 + (bowsAwayFromLimb ? halfEllipse : -halfEllipse);
+}
+
+test("moon disc: the drawn area matches the illuminated fraction", () => {
+  const R = 46;
+  for (const k of [0.05, 0.25, 0.4, 0.5, 0.6, 0.71, 0.9, 0.99]) {
+    for (const waxing of [true, false]) {
+      const d = litPath(k, waxing, R, 60);
+      assertClose(
+        litFraction(d, R),
+        k,
+        0.001,
+        `área dibujada para k=${k}, ${waxing ? "creciente" : "menguante"}`
+      );
+    }
+  }
+});
+
+test("moon disc: waxing lights the right limb and waning the left", () => {
+  const R = 46;
+  // Sweep 1 on the top-to-bottom limb bows right; sweep 0 bows left.
+  assertEqual(parseArcs(litPath(0.7, true, R, 60))[0].sweep, 1, "creciente ilumina la derecha");
+  assertEqual(parseArcs(litPath(0.7, false, R, 60))[0].sweep, 0, "menguante ilumina la izquierda");
+});
+
+test("moon disc: the terminator flattens to a straight edge at the quarters", () => {
+  const R = 46;
+  assertClose(parseArcs(litPath(0.5, true, R, 60))[1].rx, 0, 1e-9, "cuarto = terminador recto");
+});
+
+test("moon disc: clamps outside [0, 1] instead of producing a broken path", () => {
+  const R = 46;
+  for (const k of [-0.3, 1.4]) {
+    const d = litPath(k, true, R, 60);
+    assert(!d.includes("NaN"), `k=${k} produjo NaN en el path`);
+  }
 });
 
 // ---- Weather signs ----

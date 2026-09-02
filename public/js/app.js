@@ -24,6 +24,7 @@ import {
   progress,
 } from "./modules/knots.js";
 import { buildSunChart } from "./modules/sunChart.js";
+import { buildMoonDisc } from "./modules/moonPhase.js";
 import { buildCompass, crossCheck } from "./modules/compass.js";
 import { buildCloudChart } from "./modules/cloudChart.js";
 import { CLOUDS } from "./data/clouds.js";
@@ -175,6 +176,7 @@ function render() {
   );
   resultEl.append(summary);
   resultEl.append(buildSunChart(date, lat, lon));
+  resultEl.append(buildMoonBlock(report.moon));
 
   const list = document.createElement("ul");
   list.className = "events";
@@ -189,6 +191,47 @@ function render() {
     list.append(li);
   }
   resultEl.append(list);
+}
+
+function buildMoonBlock(moon) {
+  const card = document.createElement("div");
+  card.className = "card moon-block";
+
+  const disc = buildMoonDisc(moon.phase);
+
+  const info = document.createElement("div");
+  info.className = "moon-info";
+
+  const name = document.createElement("h4");
+  name.textContent = moon.phase.name;
+
+  const lit = document.createElement("p");
+  lit.className = "muted";
+  lit.textContent = `${Math.round(moon.phase.illuminated * 100)}% iluminada · ${Math.round(moon.distanceKm).toLocaleString("es-ES")} km`;
+
+  const dl = document.createElement("dl");
+  dl.className = "summary flush";
+
+  if (moon.alwaysUp) {
+    addPair(dl, "Hoy", "No se pone");
+  } else if (moon.alwaysDown) {
+    addPair(dl, "Hoy", "No sale");
+  } else {
+    addPair(dl, "Orto lunar", formatTime(moon.moonrise));
+    addPair(dl, "Ocaso lunar", formatTime(moon.moonset));
+  }
+
+  addPair(
+    dl,
+    "Ahora",
+    moon.now.isUp
+      ? `${moon.now.altitude.toFixed(0)}° de altura, ${moon.now.azimuth.toFixed(0)}° (${moon.now.compass})`
+      : "Bajo el horizonte"
+  );
+
+  info.append(name, lit, dl);
+  card.append(disc, info);
+  return card;
 }
 
 function addPair(dl, term, value) {

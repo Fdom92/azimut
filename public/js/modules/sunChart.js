@@ -1,4 +1,5 @@
 import { solarPosition } from "../astro/solar.js";
+import { moonHorizontal } from "../astro/lunar.js";
 
 // The sun's altitude across a whole day, drawn as a curve over a horizon line
 // with the twilight bands shaded underneath. The shape itself carries the
@@ -53,6 +54,22 @@ export function samplePath(date, latitude, longitude) {
     const at = new Date(start.getTime() + minutes * 60000);
     const { altitude, azimuth } = solarPosition(at, latitude, longitude);
     points.push({ minutes, altitude, azimuth, at });
+  }
+  return points;
+}
+
+// The moon on the same axes as the sun. Seeing both at once answers the
+// question the two separate lists cannot: will there be any light tonight,
+// and when.
+function sampleMoonPath(date, latitude, longitude) {
+  const points = [];
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  for (let minutes = 0; minutes <= 1440; minutes += SAMPLE_MINUTES) {
+    const at = new Date(start.getTime() + minutes * 60000);
+    const { altitude } = moonHorizontal(at, latitude, longitude);
+    points.push({ minutes, altitude });
   }
   return points;
 }
@@ -151,6 +168,13 @@ export function buildSunChart(date, latitude, longitude, now = new Date()) {
     .map((p, i) => `${i === 0 ? "M" : "L"} ${scaleX(p.minutes)} ${scaleY(p.altitude)}`)
     .join(" ");
   svg.append(el("path", { d: curve, class: "sun-path" }));
+
+  // The moon's track, dashed so it reads as the secondary curve.
+  const moonPoints = sampleMoonPath(date, latitude, longitude);
+  const moonCurve = moonPoints
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${scaleX(p.minutes)} ${scaleY(p.altitude)}`)
+    .join(" ");
+  svg.append(el("path", { d: moonCurve, class: "moon-path" }));
 
   // Marker for the current moment, only when it falls on the day drawn.
   const sameDay = now.toDateString() === new Date(date).toDateString();

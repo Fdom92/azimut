@@ -45,7 +45,7 @@ function sunApparentLong(t) {
   return trueLong - 0.00569 - 0.00478 * Math.sin(omega * rad);
 }
 
-function obliquityCorrection(t) {
+export function obliquityCorrection(t) {
   const seconds = 21.448 - t * (46.815 + t * (0.00059 - t * 0.001813));
   const meanObliquity = 23 + (26 + seconds / 60) / 60;
   const omega = 125.04 - 1934.136 * t;

@@ -1,4 +1,5 @@
 import { sunTimes, solarPosition, dayLengthMinutes } from "../astro/solar.js";
+import { moonPhase, moonTimes, moonHorizontal } from "../astro/lunar.js";
 
 // Turns raw astronomical output into the rows the panel renders.
 export function sunReport(date, latitude, longitude) {
@@ -15,6 +16,7 @@ export function sunReport(date, latitude, longitude) {
       compass: compassPoint(now.azimuth),
       isUp: now.altitude > -0.833,
     },
+    moon: moonReport(date, latitude, longitude),
     events: [
       { key: "astronomicalDawn", label: "Amanecer astronómico", at: times.astronomicalDawn },
       { key: "nauticalDawn", label: "Amanecer náutico", at: times.nauticalDawn },
@@ -30,6 +32,30 @@ export function sunReport(date, latitude, longitude) {
       { key: "nauticalDusk", label: "Anochecer náutico", at: times.nauticalDusk },
       { key: "astronomicalDusk", label: "Anochecer astronómico", at: times.astronomicalDusk },
     ],
+  };
+}
+
+// The moon gets the same treatment as the sun: where it is now, when it
+// crosses the horizon, and how much of it is lit — which is the number that
+// decides whether you can walk without a headtorch.
+export function moonReport(date, latitude, longitude) {
+  const phase = moonPhase(date);
+  const times = moonTimes(date, latitude, longitude);
+  const now = moonHorizontal(date, latitude, longitude);
+
+  return {
+    phase,
+    moonrise: times.moonrise,
+    moonset: times.moonset,
+    alwaysUp: times.alwaysUp,
+    alwaysDown: times.alwaysDown,
+    now: {
+      altitude: now.altitude,
+      azimuth: now.azimuth,
+      compass: compassPoint(now.azimuth),
+      isUp: now.altitude > 0,
+    },
+    distanceKm: phase.distance,
   };
 }
 

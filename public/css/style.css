@@ -422,3 +422,45 @@ button:disabled { opacity: 0.45; cursor: default; }
 .cloud-chart .sev-caution .stroke-only { stroke: #d9a441; }
 .cloud-chart .sev-danger { fill: var(--danger); }
 .cloud-chart .sev-danger .stroke-only { stroke: var(--danger); }
+
+/* ---- Moon ---- */
+
+.sun-chart .moon-path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.moon-block {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.moon-disc { width: 96px; height: 96px; flex-shrink: 0; }
+
+/* The disc carries its own colours rather than surface tokens: in light mode
+   --surface-2 is near white, which made the unlit half read as the bright
+   one. Lit and unlit have to stay ordered in both themes. */
+.moon-disc .moon-dark { fill: #2b3a33; }
+.moon-disc .moon-lit { fill: #f2ecd4; }
+.moon-disc .moon-edge { fill: none; stroke: var(--border); stroke-width: 1.5; }
+
+@media (prefers-color-scheme: light) {
+  .moon-disc .moon-dark { fill: #4a5a52; }
+  .moon-disc .moon-lit { fill: #fbf6e2; }
+}
+
+.moon-info { flex: 1; min-width: 190px; }
+.moon-info h4 { margin: 0 0 4px; font-size: 16px; }
+.moon-info p { margin: 0 0 10px; font-size: 13px; }
+
+.summary.flush {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  gap: 2px 14px;
+}
