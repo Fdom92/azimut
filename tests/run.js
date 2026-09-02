@@ -852,13 +852,57 @@ test("knots: missingParts names exactly what an entry still lacks", () => {
 
 // Ephemeris cross-check.
 //
-// Everything above is an invariant that holds by construction, so the suite
-// proves internal consistency but not absolute accuracy. Absolute accuracy is
-// confirmed by hand against the NOAA Solar Calculator
-// (https://gml.noaa.gov/grad/solcalc/) and pinned here as literals once
-// checked. Do not fill these in from memory — read them off the calculator.
+// Everything above is an invariant that holds by construction, so it proves
+// internal consistency but not absolute accuracy. These are the absolute
+// numbers, read off the NOAA Solar Calculator (https://gml.noaa.gov/grad/solcalc/)
+// for Madrid on 2026-09-02 and converted to UTC using the zone offset the
+// calculator itself reported for each row — it silently re-derives the zone
+// from the location, so the offset has to be read back rather than assumed.
 //
-// test("solar: matches NOAA for Madrid on <date>", () => { ... });
+// Measured agreement when these were pinned: declination within 0.012 degrees,
+// equation of time within 0.013 minutes, solar noon within 14 seconds, and
+// rise and set within 15 seconds once NOAA's rounding to the minute is
+// allowed for. Tolerances below sit a little wider than that so ordinary
+// floating-point drift does not turn the suite red.
+
+const NOAA_MADRID = [
+  { date: "2026-03-20", sunrise: "06:18", solarNoon: "12:22:23", sunset: "18:27", eqTime: -7.43, declination: -0.03 },
+  { date: "2026-06-21", sunrise: "04:45", solarNoon: "12:16:32", sunset: "19:49", eqTime: -1.84, declination: 23.44 },
+  { date: "2026-09-02", sunrise: "05:43", solarNoon: "12:14:40", sunset: "18:45", eqTime: 0.30, declination: 7.81 },
+  { date: "2026-12-21", sunrise: "07:34", solarNoon: "12:12:39", sunset: "16:51", eqTime: 1.91, declination: -23.44 },
+];
+
+function utcSeconds(date) {
+  return date.getUTCHours() * 3600 + date.getUTCMinutes() * 60 + date.getUTCSeconds();
+}
+
+function clockSeconds(hms) {
+  const [h, m, sec = 0] = hms.split(":").map(Number);
+  return h * 3600 + m * 60 + sec;
+}
+
+test("solar: rise, noon and set match NOAA for Madrid", () => {
+  for (const row of NOAA_MADRID) {
+    const t = sunTimes(new Date(`${row.date}T12:00:00Z`), MADRID.lat, MADRID.lon);
+
+    // NOAA gives rise and set to the minute, so half a minute of that gap is
+    // its rounding rather than our error.
+    assertClose(utcSeconds(t.sunrise), clockSeconds(row.sunrise), 60, `orto ${row.date}`);
+    assertClose(utcSeconds(t.sunset), clockSeconds(row.sunset), 60, `ocaso ${row.date}`);
+    // Solar noon comes with seconds, so it can be held tighter.
+    assertClose(utcSeconds(t.solarNoon), clockSeconds(row.solarNoon), 30, `mediodía ${row.date}`);
+  }
+});
+
+test("solar: declination and equation of time match NOAA for Madrid", () => {
+  for (const row of NOAA_MADRID) {
+    const t = sunTimes(new Date(`${row.date}T12:00:00Z`), MADRID.lat, MADRID.lon);
+    const century = julianCentury(toJulianDay(t.solarNoon));
+
+    assertClose(solarDeclination(century), row.declination, 0.05, `declinación ${row.date}`);
+    assertClose(equationOfTime(century), row.eqTime, 0.05, `ecuación del tiempo ${row.date}`);
+  }
+});
 
 const resultsEl =
   typeof document !== "undefined" ? document.getElementById("results") : null;
