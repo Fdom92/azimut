@@ -3,6 +3,7 @@ import {
   assert,
   assertEqual,
   assertClose,
+  assertBearing,
   assertOrdered,
   runAll,
 } from "./harness.js";
@@ -50,6 +51,14 @@ import {
 } from "../public/js/astro/lunar.js";
 import { litPath } from "../public/js/modules/moonPhase.js";
 import { parseLatitude, parseLongitude } from "../public/js/modules/sunMoon.js";
+import {
+  distanceMetres,
+  initialBearing,
+  destinationPoint,
+  reciprocal,
+  formatDistance,
+} from "../public/js/geo/bearing.js";
+import { describe as describeWaypoint, sortedByDistance } from "../public/js/modules/waypoints.js";
 import {
   toUTM,
   fromUTM,
@@ -834,6 +843,138 @@ test("dms: west is W, not O, so it cannot be misread as a zero", () => {
   // Spanish maps write O for Oeste, but these readouts sit in a monospaced
   // face beside digits and get dictated over a radio.
   assertEqual(toDMS(-3, "lon").hemisphere, "W");
+});
+
+// ---- Bearings and distance ----
+//
+// The round trip does the heavy lifting again: walk a bearing for a distance,
+// then measure what you walked. Distance and bearing check each other, so
+// neither is being compared against a number I typed in by hand.
+
+test("bearing: walking out and measuring back reproduces the distance", () => {
+  const from = { lat: 40.4168, lon: -3.7038 };
+  for (const bearing of [0, 45, 90, 137, 180, 271, 359]) {
+    for (const metres of [50, 500, 5000, 50000]) {
+      const to = destinationPoint(from.lat, from.lon, bearing, metres);
+      const measured = distanceMetres(from.lat, from.lon, to.latitude, to.longitude);
+      assertClose(measured, metres, metres * 1e-6 + 0.01, `${bearing}° a ${metres} m`);
+    }
+  }
+});
+
+test("bearing: walking out and measuring back reproduces the bearing", () => {
+  const from = { lat: 40.4168, lon: -3.7038 };
+  for (const bearing of [0, 45, 90, 137, 180, 271, 359]) {
+    const to = destinationPoint(from.lat, from.lon, bearing, 3000);
+    const measured = initialBearing(from.lat, from.lon, to.latitude, to.longitude);
+    assertBearing(measured, bearing, 1e-6, `rumbo ${bearing}°`);
+  }
+});
+
+test("bearing: the cardinal directions come out where they should", () => {
+  const madrid = { lat: 40.4168, lon: -3.7038 };
+  assertBearing(initialBearing(madrid.lat, madrid.lon, madrid.lat + 1, madrid.lon), 0, 0.01, "norte");
+  assertBearing(initialBearing(madrid.lat, madrid.lon, madrid.lat - 1, madrid.lon), 180, 0.01, "sur");
+  // Due east along a parallel drifts north of 90 on a sphere, but only just.
+  assertBearing(initialBearing(madrid.lat, madrid.lon, madrid.lat, madrid.lon + 1), 90, 0.5, "este");
+  assertBearing(initialBearing(madrid.lat, madrid.lon, madrid.lat, madrid.lon - 1), 270, 0.5, "oeste");
+});
+
+test("bearing: distance is symmetric and zero to itself", () => {
+  const a = { lat: 43.3623, lon: -8.4115 };
+  const b = { lat: 37.3891, lon: -5.9845 };
+  assertClose(distanceMetres(a.lat, a.lon, b.lat, b.lon), distanceMetres(b.lat, b.lon, a.lat, a.lon), 1e-6);
+  assertClose(distanceMetres(a.lat, a.lon, a.lat, a.lon), 0, 1e-9);
+});
+
+test("bearing: a known long leg is the right order of magnitude", () => {
+  // A Coruña to Seville. This assertion originally said "a little over 800 km"
+  // — a figure written from memory, and the only one in this group not derived
+  // from the code checking itself. It was the only one that failed. Six
+  // degrees of latitude is about 664 km and the two and a half of longitude
+  // add roughly 200 more at this latitude, which is where 695 comes from.
+  const metres = distanceMetres(43.3623, -8.4115, 37.3891, -5.9845);
+  assert(
+    metres > 650000 && metres < 750000,
+    `esperaba ~695 km en línea recta, salió ${Math.round(metres / 1000)} km`
+  );
+});
+
+test("bearing: reciprocal turns you around and back again", () => {
+  for (const bearing of [0, 90, 180, 270, 359]) {
+    assertClose(reciprocal(reciprocal(bearing)), bearing, 1e-9);
+  }
+  assertClose(reciprocal(0), 180, 1e-9);
+  assertClose(reciprocal(270), 90, 1e-9);
+});
+
+test("bearing: distances read in the unit that suits their size", () => {
+  assertEqual(formatDistance(12.4), "12 m");
+  assertEqual(formatDistance(999), "999 m");
+  assertEqual(formatDistance(1500), "1.50 km");
+  assertEqual(formatDistance(42000), "42.0 km");
+});
+
+// ---- Waypoints ----
+
+test("waypoints: a point describes its bearing and distance from where you are", () => {
+  const from = { lat: 40.4168, lon: -3.7038 };
+  const north = destinationPoint(from.lat, from.lon, 0, 2000);
+  const described = describeWaypoint(
+    { id: "a", name: "Coche", lat: north.latitude, lon: north.longitude },
+    from
+  );
+
+  assertBearing(described.bearing, 0, 0.01, "está al norte");
+  assertClose(described.distance, 2000, 0.1);
+  assertEqual(described.distanceText, "2.00 km");
+  assertEqual(described.compass, "N");
+  assert(!described.arrived);
+});
+
+test("waypoints: standing on top of one reports arrival instead of a bearing", () => {
+  // Within a few metres the bearing is GPS scatter, and pointing somewhere is
+  // worse than saying you are there.
+  const from = { lat: 40.4168, lon: -3.7038 };
+  const nearby = destinationPoint(from.lat, from.lon, 210, 4);
+  const described = describeWaypoint(
+    { id: "a", name: "Tienda", lat: nearby.latitude, lon: nearby.longitude },
+    from
+  );
+  assert(described.arrived, "cuatro metros cuenta como haber llegado");
+});
+
+test("waypoints: with no position there is no bearing to give", () => {
+  const described = describeWaypoint({ id: "a", name: "Fuente", lat: 40, lon: -3 }, null);
+  assertEqual(described.bearing, null);
+  assertEqual(described.distance, null);
+  assertEqual(described.name, "Fuente");
+});
+
+test("waypoints: the nearest point sorts first", () => {
+  const from = { lat: 40.4168, lon: -3.7038 };
+  const near = destinationPoint(from.lat, from.lon, 90, 300);
+  const far = destinationPoint(from.lat, from.lon, 90, 9000);
+
+  const sorted = sortedByDistance(
+    [
+      { id: "far", name: "Lejos", lat: far.latitude, lon: far.longitude },
+      { id: "near", name: "Cerca", lat: near.latitude, lon: near.longitude },
+    ],
+    from
+  );
+
+  assertEqual(sorted[0].id, "near");
+  assertEqual(sorted[1].id, "far");
+});
+
+test("waypoints: without a position the list keeps its original order", () => {
+  const points = [
+    { id: "b", name: "B", lat: 41, lon: -3 },
+    { id: "a", name: "A", lat: 40, lon: -3 },
+  ];
+  const sorted = sortedByDistance(points, null);
+  assertEqual(sorted.map((p) => p.id).join(","), "b,a");
 });
 
 // ---- Pace ----

@@ -808,3 +808,35 @@ button:disabled { opacity: 0.45; cursor: default; }
 
 #home .grid { padding-bottom: 0; }
 #home > nav:last-of-type { padding-bottom: var(--gap-xl); }
+
+/* ---- Waypoints ---- */
+
+.wp-readout {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 var(--gap-sm);
+}
+
+.card.following { border-color: var(--accent); }
+
+.target-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: var(--gap-sm) 12px;
+  margin-bottom: var(--gap-sm);
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  font-size: 14px;
+}
+
+.compass .target-marker line {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.compass .target-marker circle { fill: var(--accent); }

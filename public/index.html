@@ -61,6 +61,11 @@
         <span class="tile-name">Orientación</span>
         <span class="tile-desc">Encontrar el norte</span>
       </button>
+      <button class="tile" data-tool="waypoints">
+        <span class="tile-icon" aria-hidden="true">⛳</span>
+        <span class="tile-name">Puntos</span>
+        <span class="tile-desc">Rumbo y distancia para volver</span>
+      </button>
       <button class="tile" data-tool="coords">
         <span class="tile-icon" aria-hidden="true">📍</span>
         <span class="tile-name">Coordenadas</span>
@@ -126,13 +131,16 @@
 
     <div class="card">
       <h3>Brújula</h3>
+      <div id="compass-target" class="target-banner" hidden></div>
       <div id="compass-mount" class="compass-mount"></div>
       <button type="button" id="compass-start">Activar brújula</button>
       <p id="compass-reading" class="reading">—</p>
       <p class="hint">
         La rosa lleva dos referencias: la aguja magnética del dispositivo y
-        la marca del sol, que va calculada. Si discrepan, manda el sol — el
+        la marca ☉ del sol, que va calculada. Si discrepan, manda el sol — el
         magnetómetro pierde precisión cerca de metal o electrónica.
+        <strong>El sol no necesita permiso</strong>: aunque la brújula esté
+        denegada, la rosa sigue sirviendo para orientarte.
       </p>
     </div>
 
@@ -251,6 +259,30 @@
     <div id="nature-list"></div>
     <h3>Fuentes</h3>
     <ul id="nature-sources" class="events"></ul>
+  </section>
+
+  <section id="waypoints" class="panel" hidden>
+    <h2>Puntos guardados</h2>
+    <p class="lead">
+      Guarda dónde dejaste el coche, la tienda o la fuente. Desde donde estés,
+      te da el rumbo y la distancia de vuelta — sin mapa y sin cobertura.
+    </p>
+
+    <div id="waypoints-position" class="position-bar"></div>
+
+    <div class="card">
+      <h3>Guardar donde estoy</h3>
+      <div class="row">
+        <label for="wp-name">Nombre</label>
+        <input id="wp-name" type="text" maxlength="40" placeholder="Coche, tienda, fuente…">
+      </div>
+      <div class="actions">
+        <button type="button" id="wp-save">Guardar</button>
+      </div>
+      <p id="wp-message" class="hint"></p>
+    </div>
+
+    <div id="wp-list"></div>
   </section>
 
   <section id="coords" class="panel" hidden>

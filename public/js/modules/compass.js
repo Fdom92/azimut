@@ -88,6 +88,15 @@ export function buildCompass() {
   sunLabel.textContent = "☉";
   rose.append(sun, sunLabel);
 
+  // A bearing to a saved point, drawn as a line across the rose. Turn the
+  // phone until it sits under the index mark at the top and walk that way —
+  // which is the entire point of having a bearing rather than a map.
+  const target = el("g", { class: "target-marker" });
+  const targetLine = el("line", { x1: CENTER, y1: CENTER, x2: CENTER, y2: CENTER });
+  const targetHead = el("circle", { cx: CENTER, cy: CENTER, r: 6 });
+  target.append(targetLine, targetHead);
+  rose.append(target);
+
   svg.append(rose);
 
   // Fixed index mark at the top: the direction the top of the phone points.
@@ -102,7 +111,8 @@ export function buildCompass() {
     svg,
     // heading: where the top of the device points, degrees from true north.
     // sunAzimuth: null when the sun is below the horizon.
-    update({ heading, sunAzimuth }) {
+    // targetBearing: null when no saved point is being followed.
+    update({ heading, sunAzimuth, targetBearing }) {
       const rotation = Number.isFinite(heading) ? -heading : 0;
       rose.setAttribute("transform", `rotate(${rotation} ${CENTER} ${CENTER})`);
 
@@ -115,6 +125,16 @@ export function buildCompass() {
         sun.setAttribute("cy", at.y);
         sunLabel.setAttribute("x", at.x);
         sunLabel.setAttribute("y", at.y + 4);
+      }
+
+      const hasTarget = Number.isFinite(targetBearing);
+      target.style.display = hasTarget ? "" : "none";
+      if (hasTarget) {
+        const tip = pointAt(targetBearing, RADIUS - 6);
+        targetLine.setAttribute("x2", tip.x);
+        targetLine.setAttribute("y2", tip.y);
+        targetHead.setAttribute("cx", tip.x);
+        targetHead.setAttribute("cy", tip.y);
       }
     },
   };

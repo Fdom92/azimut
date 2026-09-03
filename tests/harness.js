@@ -30,6 +30,22 @@ export function assertClose(actual, expected, tolerance, message) {
   }
 }
 
+// Bearings wrap, so 0 and 359.9999 are the same direction and a plain
+// numeric comparison calls them 360 apart. Everything angular goes through
+// this instead.
+export function assertBearing(actual, expected, tolerance, message) {
+  if (!Number.isFinite(actual)) {
+    throw new Error(`${message || "not a bearing"}: got ${actual}`);
+  }
+  let delta = Math.abs(actual - expected) % 360;
+  if (delta > 180) delta = 360 - delta;
+  if (delta > tolerance) {
+    throw new Error(
+      `${message || "bearing off"}: expected ${expected}° ±${tolerance}°, got ${actual}° (${delta}° apart)`
+    );
+  }
+}
+
 export function assertOrdered(values, message) {
   for (let i = 1; i < values.length; i++) {
     const [prevName, prev] = values[i - 1];

@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v12";
+const CACHE = "azimut-v13";
 
 const ASSETS = [
   ".",
@@ -29,6 +29,8 @@ const ASSETS = [
   "js/data/regions/iberia.js",
   "js/data/regions/iberia-nature.js",
   "js/geo/coordinates.js",
+  "js/geo/bearing.js",
+  "js/modules/waypoints.js",
   "js/modules/pace.js",
   "js/modules/paceChart.js",
   "js/modules/coordDiagram.js",

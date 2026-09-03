@@ -48,6 +48,8 @@ import {
 import { diagramFor } from "./modules/natureDiagrams.js";
 import { allFormats, toMGRS } from "./geo/coordinates.js";
 import { mgrsAnatomy, stormScale } from "./modules/coordDiagram.js";
+import { sortedByDistance } from "./modules/waypoints.js";
+import { reciprocal } from "./geo/bearing.js";
 import { buildPaceChart, buildBreakdown } from "./modules/paceChart.js";
 import {
   estimateMinutes,
@@ -90,6 +92,7 @@ for (const tile of document.querySelectorAll(".tile[data-tool]")) {
     showTool(tool);
     if (tool === "sunMoon") openSunMoon();
     if (tool === "coords") openCoords();
+    if (tool === "waypoints") openWaypoints();
     if (tool === "orient") {
       renderOrientationPosition();
       renderOrientation();
@@ -415,13 +418,20 @@ let lastHeading = null;
 
 // Redraw the rose whenever either input moves: the device heading, or the
 // sun's bearing as the day goes on.
-function refreshCompass() {
+async function refreshCompass() {
   const position = currentPosition();
   const sunAzimuth = position
     ? shadowMethod(new Date(), position.lat, position.lon)
     : null;
   const azimuth = sunAzimuth?.usable ? sunAzimuth.sunAzimuth : null;
-  compassWidget.update({ heading: lastHeading, sunAzimuth: azimuth });
+
+  const target = await targetBearing();
+  compassWidget.update({
+    heading: lastHeading,
+    sunAzimuth: azimuth,
+    targetBearing: target?.bearing ?? null,
+  });
+  renderTargetBanner(target);
 
   if (lastHeading == null) return;
 
@@ -438,35 +448,90 @@ function refreshCompass() {
 
 refreshCompass();
 
+function renderTargetBanner(target) {
+  const banner = document.getElementById("compass-target");
+  banner.replaceChildren();
+  banner.hidden = !target;
+  if (!target) return;
+
+  const text = document.createElement("span");
+  text.textContent = `Hacia «${target.name}» — ${target.bearing.toFixed(0)}° ${target.compass}, ${target.distanceText}`;
+
+  const stop = document.createElement("button");
+  stop.type = "button";
+  stop.className = "link";
+  stop.textContent = "dejar de seguir";
+  stop.addEventListener("click", () => {
+    activeTarget = null;
+    refreshCompass();
+  });
+
+  banner.append(text, stop);
+}
+
+// Activating the compass has several distinct ways to fail and they need
+// different answers, so the panel reports which one happened rather than
+// collapsing them all into "denied".
+//
+// iOS gates the sensor behind requestPermission, which only exists there.
+// Android has no prompt at all: Chrome either delivers events or, when the
+// site's motion-sensor permission is blocked, silently delivers nothing. That
+// silence is why there is a timer here — without it a blocked sensor is
+// indistinguishable from a phone lying still.
+let orientationSeen = false;
+let orientationTimer = null;
+
 document.getElementById("compass-start").addEventListener("click", async () => {
   const Sensor = window.DeviceOrientationEvent;
+
   if (!Sensor) {
-    compassReading.textContent = "Este dispositivo no expone orientación.";
+    compassReading.textContent =
+      "Este navegador no expone orientación. Orienta con la marca ☉ del sol: va calculada y no necesita permiso.";
     return;
   }
+
   if (typeof Sensor.requestPermission === "function") {
+    let granted;
     try {
-      const granted = await Sensor.requestPermission();
-      if (granted !== "granted") {
-        compassReading.textContent = "Permiso denegado.";
-        return;
-      }
+      granted = await Sensor.requestPermission();
     } catch {
-      compassReading.textContent = "No se pudo pedir permiso de orientación.";
+      compassReading.textContent =
+        "No se pudo pedir el permiso. Hace falta abrir la app por HTTPS y pulsar el botón directamente. La marca ☉ del sol sigue funcionando sin permiso.";
+      return;
+    }
+    if (granted !== "granted") {
+      compassReading.textContent =
+        "Permiso de orientación denegado por el navegador. En iOS se reactiva en Ajustes → Safari → Movimiento y orientación. Mientras tanto, la marca ☉ del sol te orienta igual y no necesita permiso.";
       return;
     }
   }
+
+  orientationSeen = false;
   window.addEventListener("deviceorientationabsolute", onHeading);
   window.addEventListener("deviceorientation", onHeading);
+  compassReading.textContent = "Buscando el sensor… gira el móvil despacio.";
+
+  clearTimeout(orientationTimer);
+  orientationTimer = setTimeout(() => {
+    if (orientationSeen) return;
+    compassReading.textContent =
+      "El sensor no envía datos. En Chrome de Android se comprueba en el candado de la barra de direcciones → Permisos → Sensores de movimiento. Si está bloqueado no avisa, simplemente no manda nada. La marca ☉ del sol funciona igualmente.";
+  }, 3000);
 });
 
 function onHeading(event) {
+  orientationSeen = true;
+  clearTimeout(orientationTimer);
+
   const magnetic =
     event.webkitCompassHeading ??
     (event.absolute && event.alpha != null ? 360 - event.alpha : null);
+
   if (magnetic == null) {
+    // The sensor is alive but only reporting orientation relative to wherever
+    // the device happened to start, which is useless as a heading.
     compassReading.textContent =
-      "El dispositivo entrega orientación relativa, no absoluta: no sirve como brújula.";
+      "El sensor responde, pero da orientación relativa y no absoluta, así que no sirve de brújula en este dispositivo. Usa la marca ☉ del sol.";
     return;
   }
   lastHeading = magneticToTrue(magnetic, region.magneticDeclination.approxDegrees);
@@ -1160,6 +1225,142 @@ thunderGap.addEventListener("input", () => {
 });
 
 const stormScaleMount = document.getElementById("storm-scale");
+
+// ---- Waypoints ----
+//
+// The bearing is the product here. Everything else on this panel exists to
+// produce one, and the compass is where you spend it: a marker on the rose you
+// turn the phone to line up with.
+
+let activeTarget = null;
+
+const wpList = document.getElementById("wp-list");
+const wpName = document.getElementById("wp-name");
+const wpMessage = document.getElementById("wp-message");
+
+function openWaypoints() {
+  renderWaypointsPosition();
+  renderWaypoints();
+  if (!currentPosition()) {
+    requestPosition({
+      onDone: () => {
+        renderWaypointsPosition();
+        renderWaypoints();
+      },
+    });
+  }
+}
+
+function renderWaypointsPosition() {
+  positionBar(document.getElementById("waypoints-position"), () => {
+    renderWaypointsPosition();
+    renderWaypoints();
+  });
+}
+
+document.getElementById("wp-save").addEventListener("click", async () => {
+  const position = currentPosition();
+  if (!position) {
+    wpMessage.textContent = "Necesito una posición antes de guardar un punto.";
+    return;
+  }
+  const name = wpName.value.trim();
+  if (!name) {
+    wpMessage.textContent = "Ponle un nombre para reconocerlo después.";
+    return;
+  }
+
+  await saveLocation({ name, lat: position.lat, lon: position.lon, savedAt: Date.now() });
+  wpName.value = "";
+  wpMessage.textContent = `Guardado «${name}».`;
+  await renderWaypoints();
+  await renderSaved();
+});
+
+async function renderWaypoints() {
+  const stored = await listLocations();
+  const from = currentPosition();
+  wpList.replaceChildren();
+
+  if (stored.length === 0) {
+    wpList.append(
+      notice("Todavía no hay puntos. Guarda uno antes de alejarte — es el que te trae de vuelta.")
+    );
+    return;
+  }
+
+  for (const point of sortedByDistance(stored, from)) {
+    wpList.append(waypointCard(point));
+  }
+}
+
+function waypointCard(point) {
+  const card = document.createElement("div");
+  card.className = "card";
+  if (activeTarget === point.id) card.classList.add("following");
+
+  const head = document.createElement("div");
+  head.className = "cloud-head";
+
+  const name = document.createElement("h4");
+  name.textContent = point.name;
+  head.append(name);
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "link danger";
+  remove.textContent = "borrar";
+  remove.addEventListener("click", async () => {
+    if (activeTarget === point.id) activeTarget = null;
+    await deleteLocation(point.id);
+    await renderWaypoints();
+    await renderSaved();
+  });
+  head.append(remove);
+  card.append(head);
+
+  if (point.bearing == null) {
+    card.append(para(`${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`, "hint"));
+    card.append(para("Sin posición actual, no puedo darte el rumbo.", "hint"));
+    return card;
+  }
+
+  if (point.arrived) {
+    card.append(para("Estás encima. A esta distancia el rumbo es solo ruido del GPS.", "notice"));
+    return card;
+  }
+
+  const readout = document.createElement("p");
+  readout.className = "wp-readout";
+  readout.textContent = `${point.bearing.toFixed(0)}° ${point.compass} · ${point.distanceText}`;
+  card.append(readout);
+
+  const follow = document.createElement("button");
+  follow.type = "button";
+  follow.textContent = activeTarget === point.id ? "Siguiendo — ver brújula" : "Seguir este rumbo";
+  follow.addEventListener("click", () => {
+    activeTarget = point.id;
+    showTool("orient");
+    renderOrientationPosition();
+    renderOrientation();
+    refreshCompass();
+  });
+  card.append(follow);
+
+  return card;
+}
+
+// The bearing the compass should draw, recomputed from wherever you are now.
+async function targetBearing() {
+  if (!activeTarget) return null;
+  const from = currentPosition();
+  if (!from) return null;
+  const stored = await listLocations();
+  const point = stored.find((p) => p.id === activeTarget);
+  if (!point) return null;
+  const described = sortedByDistance([point], from)[0];
+  return described.arrived ? null : described;
+}
 
 renderSaved();
 
