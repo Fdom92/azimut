@@ -840,3 +840,23 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 
 .compass .target-marker circle { fill: var(--accent); }
+
+.compass-remedies {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.compass-remedies li { margin-bottom: 5px; }
+
+.compass-diagnostic {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-word;
+}

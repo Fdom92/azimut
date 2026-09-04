@@ -448,6 +448,46 @@ async function refreshCompass() {
 
 refreshCompass();
 
+// Failure messages carry what was actually detected. Chasing this by asking
+// the user to describe what they see cost two wrong diagnoses; the app can
+// just say which branch it took.
+function showCompassProblem(headline, remedies, detected) {
+  compassReading.replaceChildren();
+
+  const title = document.createElement("p");
+  title.style.margin = "0 0 8px";
+  title.textContent = headline;
+  compassReading.append(title);
+
+  if (remedies.length > 0) {
+    const list = document.createElement("ul");
+    list.className = "compass-remedies";
+    for (const remedy of remedies) {
+      const li = document.createElement("li");
+      li.textContent = remedy;
+      list.append(li);
+    }
+    compassReading.append(list);
+  }
+
+  const fallback = document.createElement("p");
+  fallback.style.margin = "8px 0 0";
+  fallback.textContent =
+    "La marca ☉ del sol y el rumbo a un punto guardado siguen funcionando: van calculados y no necesitan ningún permiso.";
+  compassReading.append(fallback);
+
+  const diagnostic = document.createElement("p");
+  diagnostic.className = "compass-diagnostic";
+  diagnostic.textContent = Object.entries({
+    ...detected,
+    api: typeof window.DeviceOrientationEvent?.requestPermission === "function" ? "requestPermission" : "sin prompt",
+    seguro: window.isSecureContext ? "https" : "no seguro",
+  })
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(" · ");
+  compassReading.append(diagnostic);
+}
+
 function renderTargetBanner(target) {
   const banner = document.getElementById("compass-target");
   banner.replaceChildren();
@@ -485,8 +525,9 @@ document.getElementById("compass-start").addEventListener("click", async () => {
   const Sensor = window.DeviceOrientationEvent;
 
   if (!Sensor) {
-    compassReading.textContent =
-      "Este navegador no expone orientación. Orienta con la marca ☉ del sol: va calculada y no necesita permiso.";
+    showCompassProblem("Este navegador no expone orientación del dispositivo.", [], {
+      DeviceOrientationEvent: "no",
+    });
     return;
   }
 
@@ -494,14 +535,25 @@ document.getElementById("compass-start").addEventListener("click", async () => {
     let granted;
     try {
       granted = await Sensor.requestPermission();
-    } catch {
-      compassReading.textContent =
-        "No se pudo pedir el permiso. Hace falta abrir la app por HTTPS y pulsar el botón directamente. La marca ☉ del sol sigue funcionando sin permiso.";
+    } catch (error) {
+      showCompassProblem("No se pudo pedir el permiso.", [
+        "Hace falta abrir la app por HTTPS y pulsar el botón directamente.",
+      ], { error: error?.name || "desconocido" });
       return;
     }
     if (granted !== "granted") {
-      compassReading.textContent =
-        "Permiso de orientación denegado por el navegador. En iOS se reactiva en Ajustes → Safari → Movimiento y orientación. Mientras tanto, la marca ☉ del sol te orienta igual y no necesita permiso.";
+      // requestPermission was assumed to be iOS-only. It is not: some Android
+      // browsers expose it too, and pointing an Android user at Safari
+      // settings is worse than saying nothing. Name both, Android first.
+      showCompassProblem(
+        "El navegador ha denegado el permiso de orientación.",
+        [
+          "En Chrome de Android: toca el candado de la barra de direcciones → Permisos → Sensores de movimiento, y permítelo.",
+          "En iOS: Ajustes → Safari → Movimiento y orientación.",
+          "Si lo denegaste antes, el navegador lo recuerda y hay que reactivarlo ahí; volver a pulsar el botón no vuelve a preguntar.",
+        ],
+        { permiso: String(granted) }
+      );
       return;
     }
   }
@@ -514,8 +566,10 @@ document.getElementById("compass-start").addEventListener("click", async () => {
   clearTimeout(orientationTimer);
   orientationTimer = setTimeout(() => {
     if (orientationSeen) return;
-    compassReading.textContent =
-      "El sensor no envía datos. En Chrome de Android se comprueba en el candado de la barra de direcciones → Permisos → Sensores de movimiento. Si está bloqueado no avisa, simplemente no manda nada. La marca ☉ del sol funciona igualmente.";
+    showCompassProblem("El sensor no ha enviado ningún dato en tres segundos.", [
+      "En Chrome de Android: candado de la barra de direcciones → Permisos → Sensores de movimiento. Bloqueado no avisa, simplemente no manda nada.",
+      "Comprueba también que el móvil no esté en un modo de ahorro que apague sensores.",
+    ], { eventos: "0" });
   }, 3000);
 });
 
