@@ -32,7 +32,12 @@ import {
 } from "./modules/knots.js";
 import { buildSunChart } from "./modules/sunChart.js";
 import { buildMoonDisc } from "./modules/moonPhase.js";
-import { buildCompass, crossCheck } from "./modules/compass.js";
+import {
+  buildCompass,
+  crossCheck,
+  smoothBearing,
+  trustVerdict,
+} from "./modules/compass.js";
 import {
   stickAndShadow,
   watchDial,
@@ -414,36 +419,73 @@ const compassMount = document.getElementById("compass-mount");
 const compassWidget = buildCompass();
 compassMount.append(compassWidget.svg);
 
+// The orientation sensor fires around sixty times a second, and the first
+// version did everything on every event: rebuilt the banner, rewrote the
+// text, and hit IndexedDB to resolve the followed point. On top of that the
+// raw magnetometer is noisy enough that the reading jittered by several
+// degrees standing still, which pushed the sun cross-check back and forth
+// across its threshold and made the sentence flip between "matches" and
+// "disagrees" many times a second.
+//
+// So the two jobs are separated. The rose turns on every event, because that
+// is one transform and it should feel smooth. The text is throttled, reads a
+// smoothed heading, and its verdict has hysteresis so it stops changing its
+// mind about a heading that has not really moved.
+
 let lastHeading = null;
+let smoothedHeading = null;
+let cachedTarget = null;
 
-// Redraw the rose whenever either input moves: the device heading, or the
-// sun's bearing as the day goes on.
-async function refreshCompass() {
+const TEXT_INTERVAL_MS = 350;
+let lastTextAt = 0;
+
+let trustingMagnetometer = true;
+
+function currentSunAzimuth() {
   const position = currentPosition();
-  const sunAzimuth = position
-    ? shadowMethod(new Date(), position.lat, position.lon)
-    : null;
-  const azimuth = sunAzimuth?.usable ? sunAzimuth.sunAzimuth : null;
+  if (!position) return null;
+  const sun = shadowMethod(new Date(), position.lat, position.lon);
+  return sun.usable ? sun.sunAzimuth : null;
+}
 
-  const target = await targetBearing();
+// Cheap enough to run on every sensor event.
+function drawCompass() {
   compassWidget.update({
-    heading: lastHeading,
-    sunAzimuth: azimuth,
-    targetBearing: target?.bearing ?? null,
+    heading: smoothedHeading,
+    sunAzimuth: currentSunAzimuth(),
+    targetBearing: cachedTarget?.bearing ?? null,
   });
-  renderTargetBanner(target);
+}
 
-  if (lastHeading == null) return;
+function updateCompassText(force = false) {
+  const now = Date.now();
+  if (!force && now - lastTextAt < TEXT_INTERVAL_MS) return;
+  lastTextAt = now;
 
-  const check = crossCheck(lastHeading, azimuth);
-  const bearing = `${lastHeading.toFixed(0)}° (${compassPoint(lastHeading)})`;
+  if (smoothedHeading == null) return;
+
+  const azimuth = currentSunAzimuth();
+  const check = crossCheck(smoothedHeading, azimuth);
+  const bearing = `${smoothedHeading.toFixed(0)}° (${compassPoint(smoothedHeading)})`;
+
   if (!check.comparable) {
     compassReading.textContent = `Miras hacia ${bearing} respecto al norte geográfico. Sin sol sobre el horizonte no hay con qué contrastarlo.`;
     return;
   }
-  compassReading.textContent = check.trustworthy
-    ? `Miras hacia ${bearing}. Coincide con la posición del sol (${check.delta.toFixed(0)}° de diferencia), así que la lectura es buena.`
+
+  trustingMagnetometer = trustVerdict(check.delta, trustingMagnetometer);
+  compassReading.textContent = trustingMagnetometer
+    ? `Miras hacia ${bearing}. Coincide con la posición del sol, así que la lectura es buena.`
     : `Miras hacia ${bearing}, pero eso discrepa ${check.delta.toFixed(0)}° de donde está el sol. Fíate del sol: algo cerca está perturbando el magnetómetro.`;
+}
+
+// The full refresh resolves the followed point, which touches storage, so it
+// runs on the events that can change it rather than on every sensor reading.
+async function refreshCompass() {
+  cachedTarget = await targetBearing();
+  renderTargetBanner(cachedTarget);
+  drawCompass();
+  updateCompassText(true);
 }
 
 refreshCompass();
@@ -589,7 +631,11 @@ function onHeading(event) {
     return;
   }
   lastHeading = magneticToTrue(magnetic, region.magneticDeclination.approxDegrees);
-  refreshCompass();
+  smoothedHeading = smoothBearing(smoothedHeading, lastHeading);
+
+  // Rotate on every reading; rewrite the sentence only occasionally.
+  drawCompass();
+  updateCompassText();
 }
 
 // ---- Distress ----

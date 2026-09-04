@@ -60,6 +60,13 @@ import {
 } from "../public/js/geo/bearing.js";
 import { describe as describeWaypoint, sortedByDistance } from "../public/js/modules/waypoints.js";
 import {
+  smoothBearing,
+  trustVerdict,
+  crossCheck,
+  TRUST_BELOW,
+  DISTRUST_ABOVE,
+} from "../public/js/modules/compass.js";
+import {
   toUTM,
   fromUTM,
   toMGRS,
@@ -975,6 +982,84 @@ test("waypoints: without a position the list keeps its original order", () => {
   ];
   const sorted = sortedByDistance(points, null);
   assertEqual(sorted.map((p) => p.id).join(","), "b,a");
+});
+
+// ---- Compass smoothing and hysteresis ----
+//
+// Both were added because the raw sensor made the panel unusable: the reading
+// jittered several degrees while standing still, and the verdict flipped
+// between "matches the sun" and "disagrees" many times a second as that
+// jitter crossed a single threshold.
+
+test("compass: smoothing takes the short way across the 360 boundary", () => {
+  // The bug this prevents: averaging 359 and 1 arithmetically gives 180 — the
+  // exact opposite direction — and the needle would swing right round.
+  const smoothed = smoothBearing(359, 1, 0.5);
+  assertBearing(smoothed, 0, 0.001, "359 y 1 promedian a 0, no a 180");
+});
+
+test("compass: smoothing moves toward the new reading, not onto it", () => {
+  const smoothed = smoothBearing(0, 40, 0.25);
+  assert(smoothed > 0 && smoothed < 40, `esperaba algo entre 0 y 40, salió ${smoothed}`);
+  assertBearing(smoothed, 10, 2, "un cuarto del camino, aproximadamente");
+});
+
+test("compass: the first reading is adopted whole", () => {
+  assertEqual(smoothBearing(null, 137), 137, "sin valor previo no hay nada que suavizar");
+  assertEqual(smoothBearing(undefined, 137), 137);
+});
+
+test("compass: repeated smoothing converges on a steady reading", () => {
+  let heading = 0;
+  for (let i = 0; i < 60; i++) heading = smoothBearing(heading, 270, 0.25);
+  assertBearing(heading, 270, 0.1, "acaba llegando");
+});
+
+test("compass: smoothing damps noise around a stable heading", () => {
+  // Feed a jittery signal and check the output swings less than the input.
+  const noise = [88, 92, 87, 93, 86, 94, 89, 91];
+  let heading = 90;
+  const outputs = [];
+  for (const sample of noise) {
+    heading = smoothBearing(heading, sample, 0.25);
+    outputs.push(heading);
+  }
+  const spread = Math.max(...outputs) - Math.min(...outputs);
+  assert(spread < 8, `el ruido de entrada abarca 8°, la salida debería ser menor: ${spread.toFixed(1)}°`);
+});
+
+test("compass: the trust verdict holds its answer between the two thresholds", () => {
+  // Below the lower threshold it trusts, above the upper it does not, and in
+  // the gap it keeps whatever it last decided rather than flickering.
+  assertEqual(trustVerdict(5, false), true, "claramente de acuerdo");
+  assertEqual(trustVerdict(30, true), false, "claramente en desacuerdo");
+  assertEqual(trustVerdict(16, true), true, "en la banda muerta mantiene el sí");
+  assertEqual(trustVerdict(16, false), false, "y mantiene el no");
+});
+
+test("compass: a reading wandering across the old single threshold no longer flips", () => {
+  // These deltas straddle 15, which is where the verdict used to change on
+  // every sample. With hysteresis the answer has to stay put.
+  let verdict = true;
+  const changes = [];
+  for (const delta of [13, 16, 14, 17, 15, 16, 14]) {
+    const next = trustVerdict(delta, verdict);
+    if (next !== verdict) changes.push(delta);
+    verdict = next;
+  }
+  assertEqual(changes.length, 0, `no debería cambiar de opinión: cambió en ${changes}`);
+});
+
+test("compass: crossCheck measures the short angle between the two references", () => {
+  assertClose(crossCheck(10, 350).delta, 20, 1e-9, "cruza el cero por el lado corto");
+  assertClose(crossCheck(350, 10).delta, 20, 1e-9);
+  assertClose(crossCheck(0, 180).delta, 180, 1e-9);
+  assertEqual(crossCheck(90, null).comparable, false, "sin sol no hay comparación");
+});
+
+test("compass: the thresholds leave a real gap to hold the verdict in", () => {
+  assert(DISTRUST_ABOVE > TRUST_BELOW, "sin banda muerta la histéresis no existe");
+  assert(DISTRUST_ABOVE - TRUST_BELOW >= 5, "la banda tiene que superar al ruido del sensor");
 });
 
 // ---- Pace ----

@@ -154,3 +154,35 @@ export function crossCheck(magneticTrueHeading, sunBearingFromDevice) {
     trustworthy: delta <= 15,
   };
 }
+
+// ---- Smoothing and hysteresis ----
+//
+// Both exist because the raw sensor is noisy enough to be unusable as written.
+// The heading jitters several degrees standing still, which made the reading
+// unreadable and pushed the sun cross-check back and forth across its
+// threshold many times a second.
+
+// Headings are angles, so they cannot be averaged arithmetically: 359 and 1
+// average to 180, the opposite direction. Filtering the unit vector and
+// reading the angle back handles the wrap correctly.
+export function smoothBearing(previous, next, factor = 0.25) {
+  if (previous == null || !Number.isFinite(previous)) return next;
+
+  const toRad = Math.PI / 180;
+  const x = (1 - factor) * Math.cos(previous * toRad) + factor * Math.cos(next * toRad);
+  const y = (1 - factor) * Math.sin(previous * toRad) + factor * Math.sin(next * toRad);
+
+  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+}
+
+// A single threshold makes a verdict oscillate whenever the value sits near
+// it. Two, with the previous answer held in the gap, means it only changes
+// when something actually changed.
+export const TRUST_BELOW = 12;
+export const DISTRUST_ABOVE = 20;
+
+export function trustVerdict(delta, previous) {
+  if (delta <= TRUST_BELOW) return true;
+  if (delta >= DISTRUST_ABOVE) return false;
+  return previous;
+}
