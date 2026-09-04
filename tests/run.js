@@ -22,6 +22,8 @@ import {
   solarDeclination,
   equationOfTime,
   dayLengthMinutes,
+  sunApparentLong,
+  obliquityCorrection,
 } from "../public/js/astro/solar.js";
 
 import {
@@ -59,6 +61,13 @@ import {
   formatDistance,
 } from "../public/js/geo/bearing.js";
 import { describe as describeWaypoint, sortedByDistance } from "../public/js/modules/waypoints.js";
+import { allStars, findByBayer } from "../public/js/data/stars.js";
+import { CONSTELLATIONS, ASTERISMS } from "../public/js/data/constellations.js";
+import {
+  visibleStars,
+  starPosition,
+  constellationVisibility,
+} from "../public/js/astro/stars.js";
 import {
   smoothBearing,
   trustVerdict,
@@ -91,6 +100,7 @@ import {
 } from "../public/js/modules/nature.js";
 import {
   greenwichSiderealTime,
+  localSiderealTime,
   eclipticToEquatorial,
   equatorialToHorizontal,
 } from "../public/js/astro/coords.js";
@@ -1060,6 +1070,198 @@ test("compass: crossCheck measures the short angle between the two references", 
 test("compass: the thresholds leave a real gap to hold the verdict in", () => {
   assert(DISTRUST_ABOVE > TRUST_BELOW, "sin banda muerta la histéresis no existe");
   assert(DISTRUST_ABOVE - TRUST_BELOW >= 5, "la banda tiene que superar al ruido del sensor");
+});
+
+// ---- Stars ----
+//
+// The catalogue is Yale BSC data rather than anything written here, so these
+// tests check that it was parsed and is being used correctly, plus a few
+// separations and positions that are matters of fact.
+
+function angularSeparation(a, b) {
+  const rad = Math.PI / 180;
+  const ra1 = a.ra * 15 * rad, d1 = a.dec * rad;
+  const ra2 = b.ra * 15 * rad, d2 = b.dec * rad;
+  const cos = Math.sin(d1) * Math.sin(d2) + Math.cos(d1) * Math.cos(d2) * Math.cos(ra1 - ra2);
+  return Math.acos(Math.min(1, Math.max(-1, cos))) / rad;
+}
+
+test("stars: the catalogue parsed into sane ranges", () => {
+  const stars = allStars();
+  assert(stars.length > 400, `esperaba varios cientos de estrellas, hay ${stars.length}`);
+  for (const star of stars) {
+    assert(star.ra >= 0 && star.ra < 24, `ascensión recta fuera de rango: ${star.ra}`);
+    assert(star.dec >= -90 && star.dec <= 90, `declinación fuera de rango: ${star.dec}`);
+    assert(Number.isFinite(star.mag), `magnitud no numérica en ${star.name || "sin nombre"}`);
+  }
+});
+
+test("stars: the brightest few are the ones they should be, in order", () => {
+  // Facts, not preferences: Sirius is the brightest star in the night sky and
+  // these magnitudes are catalogue values.
+  const stars = allStars().sort((a, b) => a.mag - b.mag);
+  assertEqual(stars[0].name, "Sirius");
+  assertClose(stars[0].mag, -1.46, 0.01);
+  const names = stars.slice(0, 6).map((s) => s.name);
+  for (const expected of ["Sirius", "Canopus", "Arcturus", "Vega"]) {
+    assert(names.includes(expected), `${expected} debería estar entre las más brillantes`);
+  }
+});
+
+test("stars: Polaris sits within a degree of the celestial pole", () => {
+  // This is why it works for navigation, and it is the check that would catch
+  // a declination parsed wrongly.
+  const polaris = findByBayer("α", "UMi");
+  assert(polaris, "la Polar tiene que estar en el catálogo");
+  assertClose(polaris.dec, 89.26, 0.05, "declinación de la Polar");
+  assertClose(angularSeparation(polaris, { ra: 0, dec: 90 }), 0.74, 0.1, "distancia al polo");
+});
+
+test("stars: known separations come out right", () => {
+  // The Plough's pointers are about 5.4 degrees apart, and Orion's belt spans
+  // about 2.7 from end to end. Both are standard figures.
+  assertClose(
+    angularSeparation(findByBayer("β", "UMa"), findByBayer("α", "UMa")),
+    5.4, 0.2, "Merak a Dubhe"
+  );
+  assertClose(
+    angularSeparation(findByBayer("δ", "Ori"), findByBayer("ζ", "Ori")),
+    2.7, 0.3, "cinturón de Orión"
+  );
+});
+
+test("stars: every constellation figure resolves to real catalogue stars", () => {
+  // A figure naming a star the catalogue does not carry draws nothing, and
+  // that is silent at runtime. Doubles carry superscripts, so this also
+  // exercises the lookup that strips them.
+  for (const constellation of CONSTELLATIONS) {
+    for (const [a, b] of constellation.lines) {
+      assert(findByBayer(a, constellation.con), `${constellation.con}: falta ${a}`);
+      assert(findByBayer(b, constellation.con), `${constellation.con}: falta ${b}`);
+    }
+  }
+  for (const asterism of ASTERISMS) {
+    for (const [bayer, con] of asterism.stars) {
+      assert(findByBayer(bayer, con), `${asterism.name}: falta ${bayer} ${con}`);
+    }
+  }
+});
+
+test("stars: figure segments join stars that are actually near each other", () => {
+  // Constellation lines connect neighbours. A segment spanning half the sky
+  // means the wrong star was picked.
+  for (const constellation of CONSTELLATIONS) {
+    for (const [a, b] of constellation.lines) {
+      const separation = angularSeparation(
+        findByBayer(a, constellation.con),
+        findByBayer(b, constellation.con)
+      );
+      assert(
+        separation < 35,
+        `${constellation.con} ${a}-${b}: ${separation.toFixed(1)}° es demasiado para un trazo`
+      );
+    }
+  }
+});
+
+test("stars: Polaris stays at the observer's latitude as the night turns", () => {
+  // The pole does not move, so this holds at any hour — and it is the same
+  // fact the orientation module tells people to check the star by.
+  for (const hour of [0, 6, 12, 18]) {
+    const date = new Date(Date.UTC(2026, 0, 15, hour));
+    const polaris = starPosition(
+      findByBayer("α", "UMi"),
+      date.getTime() / 86400000 + 2440587.5,
+      MADRID.lat,
+      MADRID.lon
+    );
+    assertClose(polaris.altitude, MADRID.lat, 1.2, `a las ${hour}h UTC`);
+  }
+});
+
+test("stars: the southern sky is not visible from Madrid, and vice versa", () => {
+  // A star 60 degrees south can never rise at latitude 40 north.
+  const canopus = allStars().find((s) => s.name === "Canopus");
+  for (const hour of [0, 4, 8, 12, 16, 20]) {
+    const date = new Date(Date.UTC(2026, 0, 15, hour));
+    const seen = visibleStars(date, MADRID.lat, MADRID.lon);
+    assert(!seen.some((s) => s.name === "Canopus"), `Canopus (dec ${canopus.dec}) no sale en Madrid`);
+  }
+});
+
+test("stars: circumpolar stars never set, at any hour", () => {
+  // Above latitude 40, anything with declination over 50 stays up all night.
+  for (const hour of [0, 6, 12, 18]) {
+    const date = new Date(Date.UTC(2026, 5, 15, hour));
+    const seen = visibleStars(date, MADRID.lat, MADRID.lon);
+    assert(seen.some((s) => s.name === "Polaris" || s.bayer === "α" && s.con === "UMi"),
+      `la Polar debería estar arriba a las ${hour}h`);
+  }
+});
+
+test("stars: half the sky is up at any moment, roughly", () => {
+  const date = new Date(Date.UTC(2026, 3, 10, 22));
+  const seen = visibleStars(date, MADRID.lat, MADRID.lon);
+  const fraction = seen.length / allStars().length;
+  assert(fraction > 0.25 && fraction < 0.6, `fracción visible inverosímil: ${fraction.toFixed(2)}`);
+});
+
+test("stars: the same sky comes back a sidereal day later", () => {
+  // Stars return to the same place after 23h56m04s, not 24h. Getting this
+  // wrong by four minutes a day is the classic sidereal-time error.
+  const first = new Date(Date.UTC(2026, 2, 1, 22, 0, 0));
+  const siderealDayMs = 23 * 3600000 + 56 * 60000 + 4.09 * 1000;
+  const later = new Date(first.getTime() + siderealDayMs);
+
+  const vega = findByBayer("α", "Lyr");
+  const a = starPosition(vega, first.getTime() / 86400000 + 2440587.5, MADRID.lat, MADRID.lon);
+  const b = starPosition(vega, later.getTime() / 86400000 + 2440587.5, MADRID.lat, MADRID.lon);
+
+  assertClose(a.altitude, b.altitude, 0.1, "misma altura un día sidéreo después");
+  assertBearing(a.azimuth, b.azimuth, 0.1, "mismo azimut");
+});
+
+test("stars: constellation visibility reports a fraction and a highest point", () => {
+  const date = new Date(Date.UTC(2026, 0, 15, 22));
+  const orion = CONSTELLATIONS.find((c) => c.con === "Ori");
+  const visibility = constellationVisibility(orion, date, MADRID.lat, MADRID.lon);
+
+  assert(visibility.fraction >= 0 && visibility.fraction <= 1, "fracción fuera de rango");
+  assert(Number.isFinite(visibility.highest), "debe dar la altura máxima");
+  // Orion is the winter constellation; a January evening is when it is up.
+  assert(visibility.visible, "Orión debería verse una noche de enero desde Madrid");
+});
+
+test("stars: the star transform and the solar module agree about the sun", () => {
+  // The strongest check available here. solarPosition follows NOAA and folds
+  // everything into the equation of time; the star path goes through sidereal
+  // time and a general equatorial-to-horizontal rotation. They share almost no
+  // code, so putting the sun through both and getting the same spot in the sky
+  // validates the chain the stars ride on.
+  for (const hour of [7, 11, 15, 19]) {
+    const date = new Date(Date.UTC(2026, 4, 20, hour));
+    const jd = toJulianDay(date);
+    const t = julianCentury(jd);
+
+    // The sun as if it were a catalogue entry: apparent ecliptic longitude,
+    // no latitude, converted to equatorial.
+    const { rightAscension, declination } = eclipticToEquatorial(
+      sunApparentLong(t),
+      0,
+      obliquityCorrection(t)
+    );
+    const viaStars = equatorialToHorizontal(
+      rightAscension,
+      declination,
+      MADRID.lat,
+      localSiderealTime(jd, MADRID.lon)
+    );
+
+    const viaSolar = solarPosition(date, MADRID.lat, MADRID.lon);
+
+    assertClose(viaStars.altitude, viaSolar.altitude, 0.1, `altura a las ${hour}h UTC`);
+    assertBearing(viaStars.azimuth, viaSolar.azimuth, 0.2, `azimut a las ${hour}h UTC`);
+  }
 });
 
 // ---- Pace ----

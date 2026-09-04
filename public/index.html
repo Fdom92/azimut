@@ -81,6 +81,11 @@
         <span class="tile-name">Meteo</span>
         <span class="tile-desc">Leer las nubes</span>
       </button>
+      <button class="tile" data-tool="sky">
+        <span class="tile-icon" aria-hidden="true">✨</span>
+        <span class="tile-name">Estrellas</span>
+        <span class="tile-desc">Qué hay sobre ti ahora mismo</span>
+      </button>
       <button class="tile" data-tool="knots">
         <span class="tile-icon" aria-hidden="true">🪢</span>
         <span class="tile-name">Nudos</span>
@@ -328,6 +333,36 @@
       facilidad — por eso está el selector de ritmo, y por eso conviene
       dejar margen sobre lo que salga.</p>
     </div>
+  </section>
+
+  <section id="sky" class="panel" hidden>
+    <h2>Estrellas</h2>
+    <p class="lead">
+      El cielo que tienes encima, calculado para tu posición y la hora. Cénit
+      en el centro, horizonte en el borde.
+    </p>
+
+    <div id="sky-position" class="position-bar"></div>
+
+    <div class="card">
+      <p><strong>Sujeta el móvil sobre tu cabeza</strong> con el norte
+      apuntando lejos de ti, y la pantalla coincide con lo que hay arriba.
+      Mirando al cielo el este cae a la <strong>izquierda</strong>, al revés
+      que en un mapa — un planisferio con el este a la derecha es la imagen
+      especular del cielo real.</p>
+    </div>
+
+    <div id="sky-mount"></div>
+    <p id="sky-summary" class="hint"></p>
+
+    <h3>Reconocibles ahora</h3>
+    <div id="sky-constellations"></div>
+
+    <p class="hint">
+      Posiciones del Yale Bright Star Catalogue, época J2000. Las figuras de
+      las constelaciones son el trazado habitual: no hay un conjunto canónico
+      y cada atlas une estrellas algo distintas.
+    </p>
   </section>
 
   <section id="knots" class="panel" hidden>

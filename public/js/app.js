@@ -54,6 +54,7 @@ import { diagramFor } from "./modules/natureDiagrams.js";
 import { allFormats, toMGRS } from "./geo/coordinates.js";
 import { mgrsAnatomy, stormScale } from "./modules/coordDiagram.js";
 import { sortedByDistance } from "./modules/waypoints.js";
+import { buildSkyChart, tonightsConstellations } from "./modules/skyChart.js";
 import { reciprocal } from "./geo/bearing.js";
 import { buildPaceChart, buildBreakdown } from "./modules/paceChart.js";
 import {
@@ -98,6 +99,7 @@ for (const tile of document.querySelectorAll(".tile[data-tool]")) {
     if (tool === "sunMoon") openSunMoon();
     if (tool === "coords") openCoords();
     if (tool === "waypoints") openWaypoints();
+    if (tool === "sky") openSky();
     if (tool === "orient") {
       renderOrientationPosition();
       renderOrientation();
@@ -1460,6 +1462,83 @@ async function targetBearing() {
   if (!point) return null;
   const described = sortedByDistance([point], from)[0];
   return described.arrived ? null : described;
+}
+
+// ---- Sky ----
+
+const skyMount = document.getElementById("sky-mount");
+const skySummary = document.getElementById("sky-summary");
+const skyConstellations = document.getElementById("sky-constellations");
+
+function openSky() {
+  renderSkyPosition();
+  renderSky();
+  if (!currentPosition()) {
+    requestPosition({
+      onDone: () => {
+        renderSkyPosition();
+        renderSky();
+      },
+    });
+  }
+}
+
+function renderSkyPosition() {
+  positionBar(document.getElementById("sky-position"), () => {
+    renderSkyPosition();
+    renderSky();
+  });
+}
+
+function renderSky() {
+  const position = currentPosition();
+  skyMount.replaceChildren();
+  skyConstellations.replaceChildren();
+
+  if (!position) {
+    skySummary.textContent = "";
+    skyMount.append(
+      notice("Con una posición, aquí sale el cielo que tienes encima ahora mismo.")
+    );
+    return;
+  }
+
+  const now = new Date();
+  const { svg, count } = buildSkyChart(now, position.lat, position.lon);
+  skyMount.append(svg);
+
+  const sun = shadowMethod(now, position.lat, position.lon);
+  const daylight = sun.sunAltitude > -6;
+  skySummary.textContent = daylight
+    ? `${count} estrellas del catálogo están sobre tu horizonte, aunque con esta luz no se vean: el sol está a ${sun.sunAltitude.toFixed(0)}° de altura.`
+    : `${count} estrellas sobre el horizonte.`;
+
+  const tonight = tonightsConstellations(now, position.lat, position.lon);
+  if (tonight.length === 0) {
+    skyConstellations.append(
+      notice("Ninguna de las figuras del catálogo está lo bastante alta ahora mismo.")
+    );
+    return;
+  }
+
+  for (const constellation of tonight) {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const head = document.createElement("div");
+    head.className = "cloud-head";
+
+    const name = document.createElement("h4");
+    name.textContent = constellation.name;
+
+    const where = document.createElement("span");
+    where.className = "badge";
+    where.textContent = `${constellation.highest.toFixed(0)}° de altura`;
+
+    head.append(name, where);
+    card.append(head, para(constellation.note, "muted"));
+    skyConstellations.append(card);
+  }
 }
 
 renderSaved();

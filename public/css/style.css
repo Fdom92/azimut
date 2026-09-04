@@ -860,3 +860,57 @@ button:disabled { opacity: 0.45; cursor: default; }
   color: var(--muted);
   word-break: break-word;
 }
+
+/* ---- Sky chart ---- */
+
+.sky-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: var(--gap-sm) 0;
+}
+
+.sky-chart .sky-dome {
+  fill: #070c14;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.sky-chart .sky-ring {
+  fill: none;
+  stroke: #1b2740;
+  stroke-width: 1;
+}
+
+.sky-chart .sky-cardinal {
+  fill: var(--muted);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.sky-chart .sky-figures line {
+  stroke: #4a6fa5;
+  stroke-width: 1.4;
+  opacity: 0.75;
+}
+
+.sky-chart .sky-asterisms line {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 6 5;
+  opacity: 0.65;
+}
+
+.sky-chart .sky-star { fill: #f4f7ff; }
+
+.sky-chart .sky-label {
+  fill: #cfd9ee;
+  font-size: 13px;
+}
+
+/* The dome is its own night-coloured surface in both themes: a white sky
+   would defeat the point, and stars are white by definition. */
+@media (prefers-color-scheme: light) {
+  .sky-chart .sky-dome { fill: #0b1220; stroke: #b9c6d8; }
+  .sky-chart .sky-cardinal { fill: #5c6f64; }
+}

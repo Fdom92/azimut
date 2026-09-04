@@ -39,7 +39,7 @@ function sunEqOfCenter(t) {
   );
 }
 
-function sunApparentLong(t) {
+export function sunApparentLong(t) {
   const trueLong = geomMeanLongSun(t) + sunEqOfCenter(t);
   const omega = 125.04 - 1934.136 * t;
   return trueLong - 0.00569 - 0.00478 * Math.sin(omega * rad);
