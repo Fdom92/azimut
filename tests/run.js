@@ -1496,6 +1496,42 @@ test("knots: an image cannot be added without full attribution", () => {
   }
 });
 
+// The two checks below read the repo, so they only run under Node; the browser
+// pass skips them. They exist because both failures are silent: a mistyped
+// filename shows a broken image, and an image left out of the precache list
+// works perfectly until you are somewhere with no signal, which is the only
+// place this module matters.
+const repoFiles =
+  typeof process !== "undefined" && process.versions?.node
+    ? await import("node:fs")
+    : null;
+
+if (repoFiles) {
+  const publicDir = new URL("../public/", import.meta.url);
+
+  test("knots: every declared image file exists in the repo", () => {
+    for (const knot of KNOTS) {
+      if (knot.image == null) continue;
+      const path = new URL(`img/knots/${knot.image.file}`, publicDir);
+      assert(
+        repoFiles.existsSync(path),
+        `${knot.id}: declara "${knot.image.file}" y ese fichero no está`
+      );
+    }
+  });
+
+  test("knots: every image is precached by the service worker", () => {
+    const sw = repoFiles.readFileSync(new URL("sw.js", publicDir), "utf8");
+    for (const knot of KNOTS) {
+      if (knot.image == null) continue;
+      assert(
+        sw.includes(`"img/knots/${knot.image.file}"`),
+        `${knot.id}: "${knot.image.file}" no está en ASSETS — sin cobertura no se vería`
+      );
+    }
+  });
+}
+
 test("knots: nothing is marked reviewed while its steps or image are missing", () => {
   for (const knot of KNOTS) {
     if (!knot.reviewed) continue;

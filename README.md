@@ -35,13 +35,15 @@ Most outdoor apps assume connectivity, an account, and a server round-trip for t
 | **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
-| **Knots** | Ten knots grouped by purpose. **Illustrations pending** — see below |
+| **Knots** | Ten knots grouped by purpose, eight of them illustrated. **Awaiting review** — see below |
 
 ## The state of the knots module
 
-It ships without its diagrams, and the panel says so on every entry. This is deliberate rather than unfinished-by-accident: a knot is topology, and a diagram with one crossing drawn the wrong way teaches a different knot while looking authoritative. In a mountain context that is not a cosmetic bug, so the figures are being sourced rather than generated.
+Eight of the ten knots now carry a diagram, sourced from Wikimedia Commons, credited in the panel and bundled for offline use. None is marked reviewed, and every card says what it is still short of.
 
-`public/img/knots/README.md` carries the rules for adding them — prefer public domain or CC0, never anything with a NoDerivatives clause if the image needs adapting, bundle rather than hotlink. The test suite refuses an image that arrives without its five attribution fields.
+That distinction is the whole design of this module. A knot is topology, and a diagram with one crossing drawn the wrong way teaches a different knot while looking authoritative — in a mountain context that is not a cosmetic bug. A filename is not evidence: the obvious Commons candidate for the *nudo de ocho* turned out to be the figure-eight stopper rather than the figure-eight loop the card describes, so it was rejected and that entry still has no image. The *nudo taz* has no candidate at all.
+
+`public/img/knots/README.md` carries the rules and the full licence table. The test suite refuses an image that arrives without its five attribution fields, and checks that every image both exists on disk and is listed in the service worker's precache — an illustration that needs the network is useless in the place this module is for.
 
 ## Accuracy, and how far it has been checked
 
@@ -120,6 +122,8 @@ It keeps everything to magnitude 4, plus any fainter star a constellation figure
 Star positions from the [Yale Bright Star Catalogue](http://tdc-www.harvard.edu/catalogs/bsc5.html) (BSC5, equinox and epoch J2000), via [brettonw/YaleBrightStarCatalog](https://github.com/brettonw/YaleBrightStarCatalog) (MIT).
 
 Cloud classification follows the [WMO International Cloud Atlas](https://cloudatlas.wmo.int/). Nature entries cite their sources individually, in the app.
+
+Knot diagrams come from [Wikimedia Commons](https://commons.wikimedia.org/), mostly public domain or CC0; `as-de-guia.png` is CC BY 3.0 by Lucasbosch. Each is credited with a link to its source under the figure, and the full table is in `public/img/knots/README.md`.
 
 ## Licence
 

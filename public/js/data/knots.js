@@ -53,7 +53,15 @@ export const KNOTS = [
       "Puede correrse si la carga es muy variable o si el mosquetón es muy ancho.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "ballestrinque.jpg",
+      title: "EB1911 - Knot - Fig. 12 - Clove Hitch",
+      author: "Anónimo, Encyclopædia Britannica 1911",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:EB1911_-_Knot_-_Fig._12_-_Clove_Hitch.jpg",
+      note: "Dibujado alrededor de un palo. Sobre mosquetón el nudo es el mismo.",
+    },
     reviewed: false,
   },
   {
@@ -66,7 +74,15 @@ export const KNOTS = [
       "Aguanta tracción en las tres direcciones sin deformarse, que es lo que lo distingue de otros nudos de seno.",
     warnings: [],
     steps: [],
-    image: null,
+    image: {
+      file: "mariposa.png",
+      title: "Alpine butterfly knot diagram",
+      author: "LadyofHats",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Alpine_butterfly_knot_diagram.png",
+      note: "Cuatro pasos, de arriba abajo.",
+    },
     reviewed: false,
   },
   {
@@ -80,7 +96,15 @@ export const KNOTS = [
       "Tras cargarlo es difícil de deshacer — para anillos permanentes es una ventaja, para uniones temporales no.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "pescador-doble.png",
+      title: "Double Fisherman's knot",
+      author: "Autor no identificado (Wikimedia Commons)",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Double_Fisherman%27s_knot.svg",
+      note: "Cuatro pasos, de arriba abajo. Cada cabo hace su nudo y luego se juntan.",
+    },
     reviewed: false,
   },
   {
@@ -93,7 +117,14 @@ export const KNOTS = [
       "Se revisa igual que el ocho de encordamiento, que es su ventaja: un solo trazado que aprender.",
     warnings: [],
     steps: [],
-    image: null,
+    image: {
+      file: "ocho-union.png",
+      title: "Dubbeleachtknoop (Flemish bend)",
+      author: "Jeroen van der Vegt",
+      license: "CC0",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Dubbeleachtknoop.svg",
+    },
     reviewed: false,
   },
   {
@@ -108,7 +139,15 @@ export const KNOTS = [
       "Puede aflojarse con cargas cíclicas o sacudidas. Rematar siempre con un nudo de tope.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "as-de-guia.png",
+      title: "Bowline",
+      author: "Lucasbosch",
+      license: "CC BY 3.0",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Bowline.svg",
+      note: "Aquí el cabo sale por fuera del anillo. La variante con el cabo por dentro se considera más segura.",
+    },
     reviewed: false,
   },
   {
@@ -124,7 +163,14 @@ export const KNOTS = [
       "Pierde eficacia con la cuerda mojada o helada.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "prusik.jpg",
+      title: "Nodo prusik",
+      author: "AnticheSere (Wikimedia Commons)",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Nodo-prusik.JPG",
+    },
     reviewed: false,
   },
   {
@@ -139,7 +185,14 @@ export const KNOTS = [
       "Al ser más fácil de liberar, también es más fácil que se deslice. Comprueba que muerde antes de confiarle el peso.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "machard.jpg",
+      title: "The Klemheist with Loop",
+      author: "Alan W. Grogono",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Klemheist2.jpg",
+    },
     reviewed: false,
   },
   {
@@ -155,7 +208,14 @@ export const KNOTS = [
       "Necesita mosquetón de pera y con seguro; en uno estrecho la cuerda roza donde no debe.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "dinamico.jpg",
+      title: "HMS / medio ballestrinque sobre mosquetón",
+      author: "Mark in the wiki (Wikipedia en alemán)",
+      license: "Dominio público",
+      source:
+        "https://commons.wikimedia.org/wiki/File:HMS_complete.jpg",
+    },
     reviewed: false,
   },
   {

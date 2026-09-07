@@ -857,10 +857,12 @@ function knotCard(knot) {
   name.textContent = knot.name;
   head.append(name);
 
-  // When nothing is done yet, the header line above already says so — a badge
-  // on all ten entries is noise. Only mark entries that differ from that.
+  // This used to hide the badge on entries missing everything, back when all
+  // ten were, and the header said so once instead of ten times. Now that most
+  // carry a diagram, the ones that do not are exactly what a reader needs
+  // warning about, so every incomplete entry says what it is short of.
   const pending = missingParts(knot);
-  if (pending.length > 0 && pending.length < 3) {
+  if (pending.length > 0) {
     const badge = document.createElement("span");
     badge.className = "badge pending";
     badge.textContent = `Falta: ${pending.join(", ")}`;
@@ -891,9 +893,29 @@ function knotCard(knot) {
     img.src = `img/knots/${knot.image.file}`;
     img.alt = `Diagrama del ${knot.name}`;
     img.loading = "lazy";
+    figure.append(img);
+
+    // A caveat about the diagram itself — which variant it shows, which way to
+    // read a multi-step figure — belongs next to the drawing, not in the
+    // knot's warnings, which are about tying it wrong rather than reading it.
+    if (knot.image.note) {
+      const note = document.createElement("figcaption");
+      note.className = "figure-note";
+      note.textContent = knot.image.note;
+      figure.append(note);
+    }
+
+    // The credit links to the source file. CC BY wants attribution that leads
+    // back to the original, and the link is what makes it verifiable offline
+    // too: the URL is readable even when it cannot be followed.
     const caption = document.createElement("figcaption");
-    caption.textContent = imageAttribution(knot.image);
-    figure.append(img, caption);
+    const link = document.createElement("a");
+    link.href = knot.image.source;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = imageAttribution(knot.image);
+    caption.append(link);
+    figure.append(caption);
     card.append(figure);
   }
 
@@ -918,12 +940,12 @@ function knotCard(knot) {
   return card;
 }
 
-const { done, total } = progress();
+const { done, illustrated, total } = progress();
 const progressEl = document.getElementById("knots-progress");
 progressEl.textContent =
   done === total
     ? `Los ${total} nudos están ilustrados y revisados.`
-    : `${done} de ${total} nudos completos. Los pasos y las ilustraciones se sacan de una fuente y los revisa una persona antes de darlos por buenos — un diagrama mal enseña un nudo distinto al que dice.`;
+    : `${illustrated} de ${total} nudos ilustrados, ${done} revisados del todo. Los diagramas vienen de Wikimedia Commons con su licencia y su autor; hasta que una persona confirme que cada uno enseña el nudo que dice, la ficha lo avisa — un diagrama mal enseña un nudo distinto.`;
 
 knotList.replaceChildren();
 for (const group of knotsByGroup()) {

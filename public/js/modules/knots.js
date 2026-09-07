@@ -32,7 +32,12 @@ export function imageAttribution(image) {
   return `${image.title} — ${image.author}, ${image.license}`;
 }
 
+// Illustrated and complete are tracked separately because they arrive
+// separately: a sourced diagram lands long before anyone has confirmed it
+// shows the knot the card claims, and the gap between the two is the honest
+// thing to report.
 export function progress() {
   const done = KNOTS.filter(isComplete).length;
-  return { done, total: KNOTS.length };
+  const illustrated = KNOTS.filter((knot) => knot.image != null).length;
+  return { done, illustrated, total: KNOTS.length };
 }
