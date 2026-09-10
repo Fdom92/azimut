@@ -8,6 +8,10 @@
 <title>Azimut</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<!-- iOS ignores the manifest's icons when adding to the home screen and looks
+     for this one instead, so leaving it out gives a blank-page thumbnail. -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

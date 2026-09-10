@@ -1520,6 +1520,24 @@ if (repoFiles) {
     }
   });
 
+  // Not a knot test, but it lives here because it needs the same file access.
+  // cache.addAll() is all-or-nothing: one missing entry rejects the install
+  // and the app silently keeps serving whatever the previous worker cached.
+  test("service worker: every precached asset exists", () => {
+    const sw = repoFiles.readFileSync(new URL("sw.js", publicDir), "utf8");
+    const list = sw.slice(sw.indexOf("const ASSETS"), sw.indexOf("];"));
+    const assets = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+    assert(assets.length > 30, `ASSETS parsed as ${assets.length} entries`);
+    for (const asset of assets) {
+      if (asset === ".") continue;
+      assert(
+        repoFiles.existsSync(new URL(asset, publicDir)),
+        `sw.js precachea "${asset}" y ese fichero no está — addAll fallaría entero`
+      );
+    }
+  });
+
   test("knots: every image is precached by the service worker", () => {
     const sw = repoFiles.readFileSync(new URL("sw.js", publicDir), "utf8");
     for (const knot of KNOTS) {

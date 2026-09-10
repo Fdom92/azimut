@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Azimut">
+  <!-- Maskable variant. Android crops an adaptive icon to whatever shape the
+       launcher uses, so the artwork sits inside the 80% safe circle and the
+       background bleeds to the edges. No rounded corners here: the mask
+       supplies the shape, and baking one in shows as a dark halo. -->
+  <rect width="512" height="512" fill="#0d1512"/>
+  <g transform="translate(256 256) scale(1.08) translate(-256 -256)">
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#24382d" stroke-width="14"/>
+    <path d="M256 96 L256 128 M256 384 L256 416 M96 256 L128 256 M384 256 L416 256"
+          stroke="#8fa89a" stroke-width="14" stroke-linecap="round"/>
+    <path d="M256 130 L300 300 L256 268 L212 300 Z" fill="#6fcf97"/>
+  </g>
+</svg>

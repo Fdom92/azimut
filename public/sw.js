@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v15";
+const CACHE = "azimut-v16";
 
 const ASSETS = [
   ".",
@@ -42,6 +42,11 @@ const ASSETS = [
   "js/modules/natureDiagrams.js",
   "manifest.webmanifest",
   "icons/icon.svg",
+  "icons/icon-maskable.svg",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "icons/icon-maskable-192.png",
+  "icons/icon-maskable-512.png",
   // Knot diagrams. A knot module that needs the network to show you the knot
   // is useless in the place you need it, so these are precached like code.
   // The test suite checks this list against data/knots.js.
