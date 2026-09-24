@@ -32,8 +32,15 @@ Most outdoor apps assume connectivity, an account, and a server round-trip for t
 | **Saved points** | Store where the car or the tent is; get bearing and distance back from anywhere, with the bearing drawn on the compass to walk |
 | **Coordinates** | The same position in decimal degrees, degrees and minutes, degrees-minutes-seconds, UTM and MGRS — because what decides whether help reaches you is giving the format the other person is writing down |
 | **Pace** | Naismith with Langmuir's descent correction, and the question it exists for: does the light hold until you arrive? |
-| **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
+
+### Knowledge
+
+The home screen splits on what a panel is for. The tools above compute something about where you are; these teach you to read what is in front of you, and are the ones that get opened around a fire rather than in a hurry.
+
+| Tool | What it does |
+|---|---|
 | **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures |
+| **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
 | **Knots** | Ten knots grouped by purpose, each with a diagram and a step sequence folded behind a chip |
 

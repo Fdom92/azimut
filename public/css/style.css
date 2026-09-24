@@ -1005,3 +1005,11 @@ button:disabled { opacity: 0.45; cursor: default; }
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Says what a group of tiles is for. Only the Conocimientos group carries one
+   so far — the other two are self-evident from their titles. */
+.section-lead {
+  margin: calc(-1 * var(--gap-sm)) 0 var(--gap-sm);
+  color: var(--muted);
+  font-size: 13px;
+}
