@@ -35,13 +35,13 @@ Most outdoor apps assume connectivity, an account, and a server round-trip for t
 | **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
-| **Knots** | Ten knots grouped by purpose, eight of them illustrated. **Awaiting review** — see below |
+| **Knots** | Ten knots grouped by purpose, all illustrated. **Step sequences pending** — see below |
 
 ## The state of the knots module
 
-Eight of the ten knots now carry a diagram, sourced from Wikimedia Commons, credited in the panel and bundled for offline use. None is marked reviewed, and every card says what it is still short of.
+All ten knots now carry a diagram, sourced from Wikimedia Commons, credited in the panel with a link back to the original, and bundled for offline use. What is still missing is the written step sequence for each, and until that lands no entry counts as complete — every card says what it is short of.
 
-That distinction is the whole design of this module. A knot is topology, and a diagram with one crossing drawn the wrong way teaches a different knot while looking authoritative — in a mountain context that is not a cosmetic bug. A filename is not evidence: the obvious Commons candidate for the *nudo de ocho* turned out to be the figure-eight stopper rather than the figure-eight loop the card describes, so it was rejected and that entry still has no image. The *nudo taz* has no candidate at all.
+The care is the whole design of this module. A knot is topology, and a diagram with one crossing drawn the wrong way teaches a different knot while looking authoritative — in a mountain context that is not a cosmetic bug. A filename is not evidence either: the obvious Commons candidate for the *nudo de ocho* turned out to be the figure-eight stopper rather than the figure-eight loop the card describes, and was rejected in favour of one found through the Spanish Wikipedia article. The *nudo taz* only turned up once searched under its international name, the mule knot.
 
 `public/img/knots/README.md` carries the rules and the full licence table. The test suite refuses an image that arrives without its five attribution fields, and checks that every image both exists on disk and is listed in the service worker's precache — an illustration that needs the network is useless in the place this module is for.
 
@@ -123,7 +123,7 @@ Star positions from the [Yale Bright Star Catalogue](http://tdc-www.harvard.edu/
 
 Cloud classification follows the [WMO International Cloud Atlas](https://cloudatlas.wmo.int/). Nature entries cite their sources individually, in the app.
 
-Knot diagrams come from [Wikimedia Commons](https://commons.wikimedia.org/), mostly public domain or CC0; `as-de-guia.png` is CC BY 3.0 by Lucasbosch. Each is credited with a link to its source under the figure, and the full table is in `public/img/knots/README.md`.
+Knot diagrams come from [Wikimedia Commons](https://commons.wikimedia.org/), mostly public domain or CC0; three carry conditions — `as-de-guia.png` (CC BY 3.0, Lucasbosch), `ocho.jpg` (CC BY-SA 3.0, Satsun) and `taz.jpg` (CC BY-SA 4.0, Zaripov999). Each is credited with a link to its source under the figure, and the full table, with a note on why share-alike does not reach the code, is in `public/img/knots/README.md`.
 
 ## Licence
 

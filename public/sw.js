@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v16";
+const CACHE = "azimut-v17";
 
 const ASSETS = [
   ".",
@@ -57,7 +57,9 @@ const ASSETS = [
   "img/knots/mariposa.png",
   "img/knots/ocho-union.png",
   "img/knots/pescador-doble.png",
+  "img/knots/ocho.jpg",
   "img/knots/prusik.jpg",
+  "img/knots/taz.jpg",
 ];
 
 // skipWaiting hands control of an already-loaded page to the new worker, so

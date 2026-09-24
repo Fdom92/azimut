@@ -38,7 +38,15 @@ export const KNOTS = [
       "Deja siempre cabo sobrante suficiente al salir del nudo.",
     ],
     steps: [],
-    image: null,
+    image: {
+      file: "ocho.jpg",
+      title: "Figure of eight loop",
+      author: "Satsun (Wikipedia en inglés)",
+      license: "CC BY-SA 3.0",
+      source:
+        "https://commons.wikimedia.org/wiki/File:FigureOfEightLoop.jpg",
+      note: "Hecho por seno, doblando la cuerda. Encordado al arnés se traza igual, siguiendo el recorrido con el chicote.",
+    },
     reviewed: false,
   },
   {
@@ -221,13 +229,21 @@ export const KNOTS = [
   {
     id: "taz",
     name: "Nudo taz",
-    aka: [],
+    aka: ["nudo de mula", "mule knot"],
     group: "bloqueo",
     use: "Bloquear la cuerda del nudo dinámico para dejarla fija y liberar las manos.",
     characteristics: "Se hace sobre un dinámico ya montado y se deshace bajo carga.",
     warnings: [],
     steps: [],
-    image: null,
+    image: {
+      file: "taz.jpg",
+      title: "Munter Mule Hitch",
+      author: "Zaripov999",
+      license: "CC BY-SA 4.0",
+      source:
+        "https://commons.wikimedia.org/wiki/File:Munter_Mule_Hitch.jpg",
+      note: "Abajo el dinámico sobre el mosquetón; encima la mula que lo bloquea.",
+    },
     reviewed: false,
   },
 ];
