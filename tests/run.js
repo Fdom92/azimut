@@ -65,6 +65,15 @@ import { allStars, findByBayer } from "../public/js/data/stars.js";
 import { CONSTELLATIONS, ASTERISMS } from "../public/js/data/constellations.js";
 import { MYTHS, mythFor } from "../public/js/data/constellation-myths.js";
 import {
+  TECHNIQUES,
+  HAND_ANGLES,
+  DEGREES_PER_HOUR,
+  inHandUnits,
+  describeHandUnits,
+  describeFists,
+  techniqueById,
+} from "../public/js/data/fieldcraft.js";
+import {
   visibleStars,
   starPosition,
   constellationVisibility,
@@ -1458,6 +1467,96 @@ test("nature: grouping keeps every entry and invents none", () => {
 // than from memory, so these tests guard the discipline around them: nothing
 // claims to be finished before it is, and no image can arrive without the
 // attribution its licence requires.
+
+test("medir a ojo: los gestos descomponen un ángulo sin perder grados", () => {
+  for (const degrees of [1, 5, 10, 20, 23, 45, 7, 38, 63]) {
+    const parts = inHandUnits(degrees);
+    const covered = parts.reduce((sum, p) => sum + p.count * p.degrees, 0);
+    assert(covered <= degrees, `${degrees}°: los gestos suman de más`);
+    assert(
+      degrees - covered < 1,
+      `${degrees}°: quedan ${degrees - covered}° sin expresar y el meñique vale 1°`
+    );
+  }
+});
+
+test("medir a ojo: coge siempre el gesto más grande que quepa", () => {
+  const veinte = inHandUnits(20);
+  assertEqual(veinte.length, 1, "20° debería ser un solo gesto");
+  assertEqual(veinte[0].id, "palmo", "20° es la mano abierta, no dos puños");
+
+  const diez = inHandUnits(10);
+  assertEqual(diez[0].id, "puno", "10° es un puño, no dos veces tres dedos");
+});
+
+// 7° used to read "tres dedos y 2 dedos", which sounds like a contradiction
+// rather than two gestures. The 1° unit is named for the gesture instead.
+test("medir a ojo: la lectura no se contradice a sí misma", () => {
+  const texto = describeHandUnits(7);
+  assert(texto.includes("tres dedos"), `7°: falta el gesto de tres dedos — "${texto}"`);
+  assert(
+    !/tres dedos y \d+ dedos/.test(texto),
+    `7°: la lectura se contradice — "${texto}"`
+  );
+});
+
+// Stacking fists is the only practical way to read the sun, so the wording has
+// to sound like an instruction rather than an inventory of gestures.
+test("medir a ojo: el sol se lee en puños, no en un inventario de gestos", () => {
+  assertEqual(describeFists(39), "casi 4 puños");
+  assertEqual(describeFists(40), "unos 4 puños");
+  assertEqual(describeFists(25), "2 puños y medio");
+  assertEqual(describeFists(10), "un puño");
+  assertEqual(describeFists(15), "un puño y medio");
+  assertEqual(describeFists(9), "casi un puño");
+  assertEqual(describeFists(5), "medio puño");
+  assertEqual(describeFists(3), "menos de medio puño");
+  // No reading should start with a zero count.
+  for (let d = 1; d <= 90; d++) {
+    assert(!/^0 |\b0 puños/.test(describeFists(d)), `${d}°: "${describeFists(d)}" empieza en cero`);
+  }
+  // Read aloud to a child holding up a hand, so a bare digit for one is wrong.
+  for (const d of [9, 10, 15]) {
+    assert(!/\b1 puño/.test(describeFists(d)), `${d}°: "${describeFists(d)}" debería decir "un"`);
+  }
+  assert(!describeFists(39).includes("meñique"), "no debería mencionar meñiques");
+  for (const bad of [0, -1, NaN]) assertEqual(describeFists(bad), "nada");
+});
+
+test("medir a ojo: un ángulo nulo o imposible no inventa gestos", () => {
+  for (const bad of [0, -5, NaN, Infinity]) {
+    assertEqual(inHandUnits(bad).length, 0, `${bad} no debería dar gestos`);
+  }
+  assertEqual(describeHandUnits(0), "menos de un dedo");
+});
+
+// The fist trick rests on this number, and it is not arbitrary: the Earth
+// turns 360 degrees in 24 hours.
+test("medir a ojo: el sol baja 15 grados por hora", () => {
+  assertEqual(DEGREES_PER_HOUR, 360 / 24);
+  const puno = HAND_ANGLES.find((h) => h.id === "puno");
+  assertClose(
+    (puno.degrees / DEGREES_PER_HOUR) * 60,
+    40,
+    0.5,
+    "un puño debería salir a unos 40 minutos de luz"
+  );
+});
+
+test("medir a ojo: cada método dice qué mide, cómo, por qué y con qué error", () => {
+  for (const technique of TECHNIQUES) {
+    for (const field of ["name", "measures", "why", "accuracy"]) {
+      assert(
+        typeof technique[field] === "string" && technique[field].trim().length > 0,
+        `${technique.id}: campo "${field}" vacío`
+      );
+    }
+    assert(technique.how.length >= 2, `${technique.id}: necesita pasos`);
+    assertEqual(techniqueById(technique.id), technique, `${technique.id}: no se encuentra por id`);
+  }
+  const ids = TECHNIQUES.map((t) => t.id);
+  assertEqual(new Set(ids).size, ids.length, "id de método duplicado");
+});
 
 test("myths: every drawn figure has one, and every myth has a figure", () => {
   const drawn = CONSTELLATIONS.map((c) => c.con);

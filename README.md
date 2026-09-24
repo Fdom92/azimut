@@ -43,6 +43,7 @@ The home screen splits on what a panel is for. The tools above compute something
 | **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
 | **Knots** | Ten knots grouped by purpose, each with a diagram and a step sequence folded behind a chip |
+| **Measuring by eye** | Angles from your hand, height from a shadow, a river's width from a hat brim, distance from your own pace — each with why it works and how wrong it can be. Checks your fist against the computed sun |
 
 ## The state of the knots module
 

@@ -57,6 +57,16 @@ import { mgrsAnatomy, stormScale } from "./modules/coordDiagram.js";
 import { sortedByDistance } from "./modules/waypoints.js";
 import { buildSkyChart, tonightsConstellations } from "./modules/skyChart.js";
 import { mythFor } from "./data/constellation-myths.js";
+import {
+  TECHNIQUES,
+  describeFists,
+  describeHandUnits,
+  DEGREES_PER_HOUR,
+} from "./data/fieldcraft.js";
+import {
+  diagramFor as fieldcraftDiagram,
+  fistsToHorizon,
+} from "./modules/fieldcraftDiagrams.js";
 import { reciprocal } from "./geo/bearing.js";
 import { buildPaceChart, buildBreakdown } from "./modules/paceChart.js";
 import {
@@ -107,6 +117,7 @@ for (const tile of document.querySelectorAll(".tile[data-tool]")) {
     if (tool === "coords") openCoords();
     if (tool === "waypoints") openWaypoints();
     if (tool === "sky") openSky();
+    if (tool === "fieldcraft") openFieldcraft();
     if (tool === "orient") {
       renderOrientationPosition();
       renderOrientation();
@@ -1655,6 +1666,134 @@ function renderSky() {
     }
 
     skyConstellations.append(card);
+  }
+}
+
+// ---- Measuring by eye ----
+
+function openFieldcraft() {
+  renderFieldcraftPosition();
+  renderFieldcraft();
+  if (!currentPosition()) {
+    requestPosition({
+      onDone: () => {
+        renderFieldcraftPosition();
+        renderFieldcraft();
+      },
+    });
+  }
+}
+
+function renderFieldcraftPosition() {
+  positionBar(document.getElementById("fieldcraft-position"), () => {
+    renderFieldcraftPosition();
+    renderFieldcraft();
+  });
+}
+
+function renderFieldcraft() {
+  renderFistCheck();
+  renderTechniques();
+}
+
+// The teaching loop this module exists for: the child measures the sun with a
+// fist, the app says what the answer should have been. A trick you can check
+// on the spot is one you will trust later, in the dark, with no way to check.
+function renderFistCheck() {
+  const mount = document.getElementById("fieldcraft-check");
+  mount.replaceChildren();
+
+  const position = currentPosition();
+  if (!position) {
+    mount.append(
+      notice("Con una posición puesta te digo a qué altura está el sol, para que compruebes tu medida.")
+    );
+    return;
+  }
+
+  const now = new Date();
+  const sun = shadowMethod(now, position.lat, position.lon);
+  const altitude = sun.sunAltitude;
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  if (altitude <= 0) {
+    card.append(
+      para("El sol está bajo el horizonte, así que ahora no hay nada que medir. Vuelve de día y compruébalo."),
+      para("De noche el mismo truco vale para las estrellas: la altura de la Polar sobre el horizonte es tu latitud. Aquí son unos " + Math.round(Math.abs(position.lat)) + "°, es decir " + describeHandUnits(Math.abs(position.lat)) + ".", "muted")
+    );
+    mount.append(card);
+    return;
+  }
+
+  const hours = altitude / DEGREES_PER_HOUR;
+  const minutes = Math.round(hours * 60);
+
+  card.append(
+    para("Mide ahora el hueco entre el sol y el horizonte con el puño, y cuenta cuántos te caben."),
+    para("Deberían salirte " + describeFists(altitude) + ".")
+  );
+
+  card.append(fistsToHorizon(altitude / 10));
+
+  const dl = document.createElement("dl");
+  dl.className = "summary flush";
+  addPair(dl, "Altura real del sol", altitude.toFixed(0) + "°");
+  addPair(dl, "Luz que queda", formatMinutes(minutes));
+  card.append(dl);
+
+  card.append(
+    para("No mires al sol de frente para medirlo: tapa el disco con el pulgar de la otra mano y cuenta desde ahí.", "muted")
+  );
+
+  mount.append(card);
+}
+
+function renderTechniques() {
+  const list = document.getElementById("fieldcraft-list");
+  list.replaceChildren();
+
+  for (const technique of TECHNIQUES) {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const head = document.createElement("div");
+    head.className = "cloud-head";
+
+    const name = document.createElement("h4");
+    name.textContent = technique.name;
+
+    const what = document.createElement("span");
+    what.className = "badge";
+    what.textContent = technique.measures;
+
+    head.append(name, what);
+    card.append(head);
+
+    const diagram = fieldcraftDiagram(technique.id);
+    if (diagram) card.append(diagram);
+
+    const steps = document.createElement("ol");
+    steps.className = "steps";
+    for (const step of technique.how) {
+      const li = document.createElement("li");
+      li.textContent = step;
+      steps.append(li);
+    }
+    card.append(steps);
+
+    // Why it works is folded rather than dropped: it is the part that makes
+    // the method transferable instead of a trick to memorise, but it is also
+    // the part nobody needs while standing in front of the river.
+    const fold = document.createElement("details");
+    fold.className = "steps-fold";
+    const toggle = document.createElement("summary");
+    toggle.textContent = "Por qué funciona";
+    fold.append(toggle, para(technique.why), para(technique.accuracy, "muted"));
+    card.append(fold);
+
+    list.append(card);
   }
 }
 
