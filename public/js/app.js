@@ -56,6 +56,7 @@ import { allFormats, toMGRS } from "./geo/coordinates.js";
 import { mgrsAnatomy, stormScale } from "./modules/coordDiagram.js";
 import { sortedByDistance } from "./modules/waypoints.js";
 import { buildSkyChart, tonightsConstellations } from "./modules/skyChart.js";
+import { mythFor } from "./data/constellation-myths.js";
 import { reciprocal } from "./geo/bearing.js";
 import { buildPaceChart, buildBreakdown } from "./modules/paceChart.js";
 import {
@@ -1635,6 +1636,24 @@ function renderSky() {
 
     head.append(name, where);
     card.append(head, para(constellation.note, "muted"));
+
+    // The note above says how to pick the figure out. This says why it is
+    // called what it is called — which is the half a child asks about, and the
+    // half that makes the pattern stick. Folded, because someone checking
+    // which figures are up does not want ten paragraphs of Greek mythology.
+    const myth = mythFor(constellation.con);
+    if (myth) {
+      const fold = document.createElement("details");
+      fold.className = "steps-fold";
+
+      const toggle = document.createElement("summary");
+      toggle.textContent = "La historia";
+      fold.append(toggle);
+
+      fold.append(para(myth.story), para(myth.look, "muted"));
+      card.append(fold);
+    }
+
     skyConstellations.append(card);
   }
 }

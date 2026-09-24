@@ -63,6 +63,7 @@ import {
 import { describe as describeWaypoint, sortedByDistance } from "../public/js/modules/waypoints.js";
 import { allStars, findByBayer } from "../public/js/data/stars.js";
 import { CONSTELLATIONS, ASTERISMS } from "../public/js/data/constellations.js";
+import { MYTHS, mythFor } from "../public/js/data/constellation-myths.js";
 import {
   visibleStars,
   starPosition,
@@ -1457,6 +1458,38 @@ test("nature: grouping keeps every entry and invents none", () => {
 // than from memory, so these tests guard the discipline around them: nothing
 // claims to be finished before it is, and no image can arrive without the
 // attribution its licence requires.
+
+test("myths: every drawn figure has one, and every myth has a figure", () => {
+  const drawn = CONSTELLATIONS.map((c) => c.con);
+  for (const con of drawn) {
+    assert(mythFor(con) != null, `${con}: figura dibujada sin historia que abrir`);
+  }
+  for (const con of Object.keys(MYTHS)) {
+    assert(drawn.includes(con), `${con}: historia para una figura que no se dibuja`);
+  }
+});
+
+test("myths: both halves are filled in", () => {
+  for (const [con, myth] of Object.entries(MYTHS)) {
+    for (const field of ["story", "look"]) {
+      assert(
+        typeof myth[field] === "string" && myth[field].trim().length > 20,
+        `${con}: campo "${field}" vacío o demasiado corto`
+      );
+    }
+  }
+});
+
+// The Summer Triangle is a modern navigation aid, not an ancient figure. It
+// has no myth on purpose, and this pins that down so nobody invents one.
+test("myths: asterisms are left alone", () => {
+  for (const asterism of ASTERISMS) {
+    assert(
+      !Object.values(MYTHS).some((m) => m.story.includes(asterism.name)),
+      `${asterism.name}: un asterismo moderno no debería tener mito`
+    );
+  }
+});
 
 test("knots: ids are unique", () => {
   const ids = KNOTS.map((k) => k.id);

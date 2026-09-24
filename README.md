@@ -39,7 +39,7 @@ The home screen splits on what a panel is for. The tools above compute something
 
 | Tool | What it does |
 |---|---|
-| **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures |
+| **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures — each carrying the myth it is named after, and what to point at |
 | **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
 | **Knots** | Ten knots grouped by purpose, each with a diagram and a step sequence folded behind a chip |
