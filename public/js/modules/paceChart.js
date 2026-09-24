@@ -134,6 +134,11 @@ export function buildBreakdown({ flatMinutes, climbMinutes, descentMinutes }) {
   const wrapper = document.createElement("div");
   wrapper.className = "breakdown";
 
+  // A gentle descent subtracts time, and a bar chart of proportions has no
+  // room for a negative slice. It gets its own line instead, so the parts
+  // still account for the total the reader was given.
+  const credit = descentMinutes < 0 ? -descentMinutes : 0;
+
   const bar = document.createElement("div");
   bar.className = "breakdown-bar";
   for (const part of parts) {
@@ -157,5 +162,13 @@ export function buildBreakdown({ flatMinutes, climbMinutes, descentMinutes }) {
   }
 
   wrapper.append(bar, legend);
+
+  if (credit > 0) {
+    const note = document.createElement("p");
+    note.className = "breakdown-credit";
+    note.textContent = `Bajada suave: −${Math.round(credit)} min. Langmuir descuenta tiempo cuando se baja a poca pendiente.`;
+    wrapper.append(note);
+  }
+
   return wrapper;
 }

@@ -996,3 +996,12 @@ button:disabled { opacity: 0.45; cursor: default; }
   .sky-chart .sky-dome { fill: #0b1220; stroke: #b9c6d8; }
   .sky-chart .sky-cardinal { fill: #5c6f64; }
 }
+
+/* Langmuir's descent credit cannot be a slice of a proportional bar, so it is
+   stated underneath instead — without it the parts do not add up to the total
+   the reader was just given. */
+.breakdown-credit {
+  margin: var(--gap-xs) 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}

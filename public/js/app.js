@@ -14,6 +14,7 @@ import {
   magneticToTrue,
 } from "./astro/orientation.js";
 import { playSchedule, createTone, PATTERNS } from "./modules/distress.js";
+import { requestWakeLock, releaseWakeLock } from "./wakeLock.js";
 import { GROUND_SIGNALS, WHISTLE_CODES } from "./data/signals.js";
 import { region } from "./data/regions/iberia.js";
 import {
@@ -84,12 +85,17 @@ function showTool(id) {
   home.hidden = true;
   backBtn.hidden = false;
   for (const panel of panels) panel.hidden = panel.id !== id;
+  // The compass keeps the screen awake while you walk a bearing. Leaving its
+  // panel gives that up; a distress signal holds its own lock and is not
+  // affected, which is why these are named rather than shared.
+  if (id !== "orient") releaseWakeLock("compass");
 }
 
 function showHome() {
   home.hidden = false;
   backBtn.hidden = true;
   for (const panel of panels) panel.hidden = true;
+  releaseWakeLock("compass");
 }
 
 for (const tile of document.querySelectorAll(".tile[data-tool]")) {
@@ -605,6 +611,10 @@ document.getElementById("compass-start").addEventListener("click", async () => {
   orientationSeen = false;
   window.addEventListener("deviceorientationabsolute", onHeading);
   window.addEventListener("deviceorientation", onHeading);
+  // Walking on a bearing means looking down at the rose every few steps; the
+  // screen locking between glances makes the compass useless for the one job
+  // it has. Released in showTool/showHome when the panel is left.
+  requestWakeLock("compass");
   compassReading.textContent = "Buscando el sensor… gira el móvil despacio.";
 
   clearTimeout(orientationTimer);
@@ -680,6 +690,16 @@ startBtn.addEventListener("click", async () => {
   }
   if (useScreen) strobe.hidden = false;
 
+  // Without this the phone locks on its usual timeout, the page goes hidden,
+  // and the visibilitychange handler below stops the whole signal — not just
+  // the strobe. Say so when it is refused rather than letting someone hold up
+  // a phone that has quietly given up.
+  const awake = await requestWakeLock("distress");
+  if (!awake) {
+    patternDesc.textContent =
+      "No he podido impedir que se apague la pantalla. Súbele el tiempo de apagado en los ajustes del móvil, o la señal se cortará sola.";
+  }
+
   const steps = PATTERNS[patternSelect.value].steps();
   stopFn = playSchedule(steps, {
     onState: (on) => {
@@ -703,6 +723,7 @@ function stopSignal() {
   strobe.classList.remove("on");
   startBtn.disabled = false;
   stopBtn.disabled = true;
+  releaseWakeLock("distress");
 }
 
 // Never leave a strobe or a tone running in a background tab.
@@ -1314,7 +1335,11 @@ paceForm.addEventListener("submit", (event) => {
   const breakdown = buildBreakdown({
     flatMinutes: distanceKm * 12 * factor,
     climbMinutes: (ascent / 100) * 10 * factor,
-    descentMinutes: Math.max(0, descentAdjustmentMinutes(descent, distanceKm) * factor),
+    // Signed on purpose. Clamping this to zero was hiding Langmuir's credit
+    // for gentle descent: the headline dropped below the flat-ground time
+    // while the breakdown still showed only the flat figure, so the two
+    // contradicted each other exactly when the number looked surprising.
+    descentMinutes: descentAdjustmentMinutes(descent, distanceKm) * factor,
   });
   if (breakdown) {
     const card = document.createElement("div");
