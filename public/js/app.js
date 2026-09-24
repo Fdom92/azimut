@@ -893,7 +893,33 @@ function knotCard(knot) {
     img.src = `img/knots/${knot.image.file}`;
     img.alt = `Diagrama del ${knot.name}`;
     img.loading = "lazy";
-    figure.append(img);
+
+    // The diagrams come from ten different sources and no two share a shape:
+    // some are square photos, two are tall four-step sequences. A fixed frame
+    // makes the list scannable, but it shrinks those sequences to the point of
+    // uselessness — so the frame opens to the image's own size when tapped.
+    const frame = document.createElement("button");
+    frame.type = "button";
+    frame.className = "figure-frame";
+    frame.setAttribute("aria-expanded", "false");
+    frame.setAttribute("aria-label", `Ampliar el diagrama del ${knot.name}`);
+    frame.append(img);
+
+    const zoom = document.createElement("figcaption");
+    zoom.className = "zoom-hint";
+    zoom.textContent = "Tocar para ampliar";
+
+    frame.addEventListener("click", () => {
+      const open = frame.classList.toggle("expanded");
+      frame.setAttribute("aria-expanded", String(open));
+      frame.setAttribute(
+        "aria-label",
+        `${open ? "Reducir" : "Ampliar"} el diagrama del ${knot.name}`
+      );
+      zoom.textContent = open ? "Tocar para reducir" : "Tocar para ampliar";
+    });
+
+    figure.append(frame, zoom);
 
     // A caveat about the diagram itself — which variant it shows, which way to
     // read a multi-step figure — belongs next to the drawing, not in the
@@ -919,7 +945,19 @@ function knotCard(knot) {
     card.append(figure);
   }
 
+  // Folded away by default. Ten knots each showing five numbered steps turns
+  // the panel into a wall you have to scroll past to compare knots, and the
+  // steps are what you want open for one knot at a time, in your hand, not
+  // while browsing. <details> is used rather than a hand-rolled toggle so it
+  // keeps keyboard and screen-reader behaviour for free.
   if (knot.steps.length > 0) {
+    const fold = document.createElement("details");
+    fold.className = "steps-fold";
+
+    const toggle = document.createElement("summary");
+    toggle.textContent = `Cómo se hace · ${knot.steps.length} pasos`;
+    fold.append(toggle);
+
     const steps = document.createElement("ol");
     steps.className = "steps";
     for (const step of knot.steps) {
@@ -927,7 +965,20 @@ function knotCard(knot) {
       li.textContent = step;
       steps.append(li);
     }
-    card.append(steps);
+    fold.append(steps);
+
+    // Written from sources rather than copied, and not yet checked by anyone
+    // against a rope. Saying so inside the fold puts the caveat where the
+    // instructions are, not only in a badge at the top of the card.
+    if (!knot.reviewed) {
+      const caveat = document.createElement("p");
+      caveat.className = "hint";
+      caveat.textContent =
+        "Pasos pendientes de revisar. Contrástalos con el dibujo antes de fiarte de ellos.";
+      fold.append(caveat);
+    }
+
+    card.append(fold);
   }
 
   for (const warning of knot.warnings) {

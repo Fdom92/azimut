@@ -37,7 +37,13 @@ export const KNOTS = [
       "Después de aguantar una caída fuerte cuesta bastante deshacerlo.",
       "Deja siempre cabo sobrante suficiente al salir del nudo.",
     ],
-    steps: [],
+    steps: [
+      "Dobla la cuerda sobre sí misma y forma un seno tan largo como quieras que quede el anillo.",
+      "Con el seno doble, traza un ocho: pásalo por encima de las dos hebras, rodéalas por detrás y tráelo otra vez al frente.",
+      "Mete la punta del seno por el ojo que queda arriba, junto al cruce.",
+      "Aprieta tirando de cada hebra por separado, hasta que las dos vayan paralelas en todo el recorrido sin montarse.",
+      "Para encordarte al arnés se traza igual, pero con el chicote pasado por el arnés, siguiendo después el recorrido del nudo al revés.",
+    ],
     image: {
       file: "ocho.jpg",
       title: "Figure of eight loop",
@@ -60,7 +66,13 @@ export const KNOTS = [
     warnings: [
       "Puede correrse si la carga es muy variable o si el mosquetón es muy ancho.",
     ],
-    steps: [],
+    steps: [
+      "Forma un bucle con la cuerda.",
+      "Forma un segundo bucle idéntico, girando en el mismo sentido que el primero.",
+      "Monta el segundo bucle por detrás del primero, uno encima de otro.",
+      "Mete los dos bucles a la vez en el mosquetón y cierra el seguro.",
+      "Aprieta tirando de las dos hebras. Para regular la distancia al anclaje, desliza cuerda a través del nudo sin deshacerlo.",
+    ],
     image: {
       file: "ballestrinque.jpg",
       title: "EB1911 - Knot - Fig. 12 - Clove Hitch",
@@ -81,7 +93,12 @@ export const KNOTS = [
     characteristics:
       "Aguanta tracción en las tres direcciones sin deformarse, que es lo que lo distingue de otros nudos de seno.",
     warnings: [],
-    steps: [],
+    steps: [
+      "Forma un seno en mitad de la cuerda.",
+      "Retuerce el seno dos vueltas completas sobre sí mismo: queda una figura con dos ojos.",
+      "Lleva la punta del seno hacia abajo y pásala por el ojo inferior, como marca la flecha del dibujo.",
+      "Aprieta tirando a la vez del anillo y de los dos cabos de la cuerda.",
+    ],
     image: {
       file: "mariposa.png",
       title: "Alpine butterfly knot diagram",
@@ -103,7 +120,13 @@ export const KNOTS = [
     warnings: [
       "Tras cargarlo es difícil de deshacer — para anillos permanentes es una ventaja, para uniones temporales no.",
     ],
-    steps: [],
+    steps: [
+      "Pon las dos cuerdas paralelas y solapadas, con los chicotes apuntando en sentidos opuestos.",
+      "Con el chicote de una, da dos vueltas alrededor de la otra cuerda.",
+      "Pasa ese chicote por dentro de las dos vueltas y aprieta: queda un nudo doble mordiendo la otra cuerda.",
+      "Repite lo mismo con el chicote de la segunda cuerda, en sentido contrario.",
+      "Tira de las dos cuerdas para juntar los dos nudos: deben quedar pegados y simétricos.",
+    ],
     image: {
       file: "pescador-doble.png",
       title: "Double Fisherman's knot",
@@ -124,7 +147,13 @@ export const KNOTS = [
     characteristics:
       "Se revisa igual que el ocho de encordamiento, que es su ventaja: un solo trazado que aprender.",
     warnings: [],
-    steps: [],
+    steps: [
+      "Haz un ocho simple en el chicote de una de las cuerdas, sin apretarlo del todo.",
+      "Mete el chicote de la segunda cuerda por el final del ocho y sigue su recorrido al revés, hebra contra hebra.",
+      "Sácalo por donde había entrado el chicote de la primera.",
+      "Aprieta tirando de las cuatro hebras por separado.",
+      "Deja cabo sobrante en los dos extremos.",
+    ],
     image: {
       file: "ocho-union.png",
       title: "Dubbeleachtknoop (Flemish bend)",
@@ -144,9 +173,16 @@ export const KNOTS = [
     characteristics:
       "Se deshace con facilidad incluso después de haber trabajado, a diferencia del ocho.",
     warnings: [
+      "La UIAA lo desaconseja para escalada y alpinismo desde 1998: no aguanta bien las cargas oblicuas ni los impactos, y puede deshacerse al aliviarse la tensión. Para encordarte, usa el ocho.",
       "Puede aflojarse con cargas cíclicas o sacudidas. Rematar siempre con un nudo de tope.",
     ],
-    steps: [],
+    steps: [
+      "Forma un ojo pequeño en la cuerda, dejando el chicote por encima.",
+      "Pasa el chicote por dentro del ojo, de abajo hacia arriba.",
+      "Rodea con el chicote la hebra de carga, por detrás.",
+      "Vuelve a meter el chicote por el ojo, en sentido contrario al que salió.",
+      "Aprieta y remata con un nudo de tope sobre la hebra de carga.",
+    ],
     image: {
       file: "as-de-guia.png",
       title: "Bowline",
@@ -170,7 +206,13 @@ export const KNOTS = [
       "El cordino tiene que ser bastante más fino que la cuerda sobre la que muerde. Con diámetros parecidos no agarra.",
       "Pierde eficacia con la cuerda mojada o helada.",
     ],
-    steps: [],
+    steps: [
+      "Necesitas un anillo de cordino cerrado, de diámetro claramente menor que el de la cuerda.",
+      "Pasa el anillo por detrás de la cuerda y mete un extremo por el otro: queda una cabeza de alondra.",
+      "Repite la vuelta dos o tres veces más, metiendo el anillo por dentro de sí mismo cada vez.",
+      "Ordena las vueltas para que queden paralelas y sin montarse unas sobre otras.",
+      "Pruébalo antes de confiarle el peso: debe deslizar al empujarlo con la mano y morder al cargarlo.",
+    ],
     image: {
       file: "prusik.jpg",
       title: "Nodo prusik",
@@ -192,7 +234,12 @@ export const KNOTS = [
     warnings: [
       "Al ser más fácil de liberar, también es más fácil que se deslice. Comprueba que muerde antes de confiarle el peso.",
     ],
-    steps: [],
+    steps: [
+      "Con un anillo de cordino, enrolla tres o cuatro vueltas alrededor de la cuerda, todas en el mismo sentido.",
+      "Pasa el extremo libre del anillo por el bucle que queda al final de las vueltas.",
+      "Tira hacia abajo para que las vueltas se cierren sobre la cuerda.",
+      "Carga siempre en el mismo sentido: el machard muerde en una sola dirección.",
+    ],
     image: {
       file: "machard.jpg",
       title: "The Klemheist with Loop",
@@ -215,7 +262,12 @@ export const KNOTS = [
       "Retuerce la cuerda de forma notable.",
       "Necesita mosquetón de pera y con seguro; en uno estrecho la cuerda roza donde no debe.",
     ],
-    steps: [],
+    steps: [
+      "Forma un bucle con la cuerda.",
+      "Da media vuelta al bucle para que las dos hebras se crucen.",
+      "Mete el bucle en un mosquetón de seguro, mejor de pera, y cierra el seguro.",
+      "Comprueba que el nudo se voltea solo dentro del mosquetón al cambiar el sentido de la cuerda.",
+    ],
     image: {
       file: "dinamico.jpg",
       title: "HMS / medio ballestrinque sobre mosquetón",
@@ -234,7 +286,13 @@ export const KNOTS = [
     use: "Bloquear la cuerda del nudo dinámico para dejarla fija y liberar las manos.",
     characteristics: "Se hace sobre un dinámico ya montado y se deshace bajo carga.",
     warnings: [],
-    steps: [],
+    steps: [
+      "Con el dinámico cargado, sujeta firme la hebra de frenado.",
+      "Haz un seno con la hebra de frenado y pásalo por detrás de las dos hebras que salen del mosquetón.",
+      "Mete el seno por el bucle que se forma y aprieta el conjunto contra el dinámico.",
+      "Remata el sobrante con un nudo simple alrededor de la cuerda cargada, para que no pueda soltarse solo.",
+      "Para liberar, deshaz primero el remate: el nudo se suelta tirando del chicote aunque esté cargado.",
+    ],
     image: {
       file: "taz.jpg",
       title: "Munter Mule Hitch",
