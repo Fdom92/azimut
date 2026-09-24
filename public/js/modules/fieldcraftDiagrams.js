@@ -194,29 +194,37 @@ export function hatBrim() {
 
 // Why the horizon is where it is: the sight line leaves the curve at a tangent.
 export function horizonCurve() {
-  const svg = frame(320, 170, "El horizonte es donde la vista deja de tocar el suelo");
+  const svg = frame(320, 190, "El horizonte es donde la vista deja de tocar el suelo");
 
-  // A wide, shallow arc reads as a curved surface without looking like a ball.
+  // The first version curved hard enough to read as a hilltop, which taught
+  // the wrong thing entirely: the point is that this is flat ground that
+  // happens to be a very large sphere. A shallow arc says that; a peak does
+  // not.
   svg.append(
     el("path", {
-      d: "M 10 160 Q 160 90 310 160",
+      d: "M 8 142 Q 160 118 312 142",
       class: "diagram-ground",
       fill: "none",
     })
   );
 
   const eyeX = 160;
-  const eyeY = 74;
-  svg.append(el("line", { x1: eyeX, y1: 112, x2: eyeX, y2: eyeY + 8, class: "diagram-object" }));
+  const groundY = 118;
+  const eyeY = 66;
+
+  svg.append(el("line", { x1: eyeX, y1: groundY, x2: eyeX, y2: eyeY + 8, class: "diagram-object" }));
   svg.append(el("circle", { cx: eyeX, cy: eyeY, r: 8, class: "diagram-eye" }));
   svg.append(el("circle", { cx: eyeX, cy: eyeY, r: 3, class: "diagram-pupil" }));
 
-  // Tangents: they graze the curve and carry on past it.
-  svg.append(el("line", { x1: eyeX, y1: eyeY, x2: 302, y2: 150, class: "diagram-ray" }));
-  svg.append(el("line", { x1: eyeX, y1: eyeY, x2: 18, y2: 150, class: "diagram-ray" }));
+  // Sight lines grazing the surface. Where they touch is the horizon; beyond
+  // that the ground has curved away underneath them.
+  for (const x of [292, 28]) {
+    svg.append(el("line", { x1: eyeX, y1: eyeY, x2: x, y2: 139, class: "diagram-ray" }));
+    svg.append(el("circle", { cx: x, cy: 139, r: 3, class: "diagram-star" }));
+  }
 
-  svg.append(label("aquí se pierde de vista", 160, 132, "diagram-caption"));
-  svg.append(label("cuanto más alto, más lejos", 160, 30, "diagram-label"));
+  svg.append(label("cuanto más alto, más lejos llega la vista", 160, 26, "diagram-label"));
+  svg.append(label("el suelo se esconde bajo la mirada", 160, 172, "diagram-caption"));
 
   return svg;
 }
