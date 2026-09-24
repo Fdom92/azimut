@@ -72,7 +72,10 @@ megabytes; the whole app is a few hundred kilobytes. Line art belongs in PNG —
 re-encoding these diagrams as JPEG made them *larger* as well as worse.
 
 **Verified.** Set `reviewed: true` only after a person has confirmed the
-diagram shows the knot it claims to show, and the steps match it.
+diagram shows the knot it claims to show, and the steps match it. All ten
+current entries have had that check. A new one starts at `false`, and the card
+says what it is short of until someone does it — clearing the badge is not a
+reason to flip the flag.
 
 ## Where to look
 

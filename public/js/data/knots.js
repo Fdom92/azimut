@@ -1,13 +1,16 @@
 // Knots, grouped by what they are for rather than by how they are tied —
 // which is how you reach for one in the field.
 //
-// Two fields are deliberately left empty: `steps` and `image`. Step sequences
-// and diagrams are the parts where a plausible-looking mistake teaches the
-// wrong knot, and a wrong knot in the mountains is not a cosmetic bug. They
-// get filled from a source, not from memory, and `reviewed` stays false until
-// a person has checked the entry against one.
+// `steps` and `image` are the parts where a plausible-looking mistake teaches
+// the wrong knot, and a wrong knot in the mountains is not a cosmetic bug. So
+// they get filled from a source rather than from memory, and `reviewed` means
+// one specific thing: a person has read the steps against the diagram and
+// confirmed they describe the same knot, and that it is the knot the card
+// names. All ten are now at that state.
 //
-// The UI shows the pending state rather than hiding it.
+// A knot added later starts at `reviewed: false` and the UI says so on the
+// card until someone does that check — the pending state is shown, not hidden.
+// Do not flip the flag on a new entry just to clear the badge.
 
 export const GROUPS = {
   encordamiento: {
@@ -53,7 +56,7 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:FigureOfEightLoop.jpg",
       note: "Hecho por seno, doblando la cuerda. Encordado al arnés se traza igual, siguiendo el recorrido con el chicote.",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "ballestrinque",
@@ -82,7 +85,7 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:EB1911_-_Knot_-_Fig._12_-_Clove_Hitch.jpg",
       note: "Dibujado alrededor de un palo. Sobre mosquetón el nudo es el mismo.",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "mariposa",
@@ -108,7 +111,7 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:Alpine_butterfly_knot_diagram.png",
       note: "Cuatro pasos, de arriba abajo.",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "pescador-doble",
@@ -136,7 +139,7 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:Double_Fisherman%27s_knot.svg",
       note: "Cuatro pasos, de arriba abajo. Cada cabo hace su nudo y luego se juntan.",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "ocho-union",
@@ -162,7 +165,7 @@ export const KNOTS = [
       source:
         "https://commons.wikimedia.org/wiki/File:Dubbeleachtknoop.svg",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "as-de-guia",
@@ -192,7 +195,7 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:Bowline.svg",
       note: "Aquí el cabo sale por fuera del anillo. La variante con el cabo por dentro se considera más segura.",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "prusik",
@@ -221,7 +224,7 @@ export const KNOTS = [
       source:
         "https://commons.wikimedia.org/wiki/File:Nodo-prusik.JPG",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "machard",
@@ -248,7 +251,7 @@ export const KNOTS = [
       source:
         "https://commons.wikimedia.org/wiki/File:Klemheist2.jpg",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "dinamico",
@@ -276,7 +279,7 @@ export const KNOTS = [
       source:
         "https://commons.wikimedia.org/wiki/File:HMS_complete.jpg",
     },
-    reviewed: false,
+    reviewed: true,
   },
   {
     id: "taz",
@@ -302,6 +305,6 @@ export const KNOTS = [
         "https://commons.wikimedia.org/wiki/File:Munter_Mule_Hitch.jpg",
       note: "Abajo el dinámico sobre el mosquetón; encima la mula que lo bloquea.",
     },
-    reviewed: false,
+    reviewed: true,
   },
 ];

@@ -35,13 +35,17 @@ Most outdoor apps assume connectivity, an account, and a server round-trip for t
 | **Weather signs** | Cloud types placed at the altitude they form at, and what each indicates. Empirical, and says so |
 | **Stars** | The sky overhead for your position and the hour, from the Yale Bright Star Catalogue, with constellation figures |
 | **Iberian nature** | Vipers, ticks, processionary, Asian hornet, plants that burn in sunlight — what to do, and the folk remedies that make it worse. Sourced and cited |
-| **Knots** | Ten knots grouped by purpose, all illustrated. **Step sequences pending** — see below |
+| **Knots** | Ten knots grouped by purpose, each with a diagram and a step sequence folded behind a chip |
 
 ## The state of the knots module
 
-All ten knots now carry a diagram, sourced from Wikimedia Commons, credited in the panel with a link back to the original, and bundled for offline use. What is still missing is the written step sequence for each, and until that lands no entry counts as complete — every card says what it is short of.
+All ten knots carry a diagram sourced from Wikimedia Commons — credited in the panel with a link back to the original, and bundled rather than hotlinked — plus a written step sequence, and all ten have been checked by a person against their diagram.
 
 The care is the whole design of this module. A knot is topology, and a diagram with one crossing drawn the wrong way teaches a different knot while looking authoritative — in a mountain context that is not a cosmetic bug. A filename is not evidence either: the obvious Commons candidate for the *nudo de ocho* turned out to be the figure-eight stopper rather than the figure-eight loop the card describes, and was rejected in favour of one found through the Spanish Wikipedia article. The *nudo taz* only turned up once searched under its international name, the mule knot.
+
+Steps are written rather than copied — Wikipedia's text is CC BY-SA, and lifting it verbatim would pull that licence into the repo — and each sequence is matched to the diagram on its own card, so the words and the picture describe the same method. Checking those sources is also what corrected the *as de guía*: the UIAA withdrew it for climbing and mountaineering in 1998, which the entry had understated as merely working loose.
+
+A knot added later starts unreviewed, and the card says what it is short of until someone has read its steps against its diagram.
 
 `public/img/knots/README.md` carries the rules and the full licence table. The test suite refuses an image that arrives without its five attribution fields, and checks that every image both exists on disk and is listed in the service worker's precache — an illustration that needs the network is useless in the place this module is for.
 
