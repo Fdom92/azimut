@@ -1646,7 +1646,27 @@ function renderSky() {
     where.textContent = `${constellation.highest.toFixed(0)}° de altura`;
 
     head.append(name, where);
+
+    // A figure straddling the horizon is drawn only as far as it rises, so the
+    // chart shows a fragment. Saying so beats letting someone hunt for the
+    // rest of a shape that is still below the skyline.
+    if (constellation.partial) {
+      const partial = document.createElement("span");
+      partial.className = "badge pending";
+      partial.textContent = "asoma a medias";
+      head.append(partial);
+    }
+
     card.append(head, para(constellation.note, "muted"));
+
+    if (constellation.asterism) {
+      card.append(
+        para(
+          "Figura moderna, no una constelación: une estrellas de varias. En el mapa va en trazo discontinuo.",
+          "hint"
+        )
+      );
+    }
 
     // The note above says how to pick the figure out. This says why it is
     // called what it is called — which is the half a child asks about, and the

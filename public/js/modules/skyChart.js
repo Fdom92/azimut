@@ -76,10 +76,13 @@ export function buildSkyChart(date, latitude, longitude) {
     svg.append(text);
   }
 
-  // Constellation figures underneath the stars.
+  // Figures underneath the stars. Drawn from exactly the list the panel names
+  // below the chart, so the two can never disagree about what is up there.
+  const tonight = tonightsConstellations(date, latitude, longitude);
+
   const figures = el("g", { class: "sky-figures" });
-  for (const constellation of CONSTELLATIONS) {
-    for (const { from, to } of figureSegments(constellation, date, latitude, longitude)) {
+  for (const constellation of tonight.filter((c) => !c.asterism)) {
+    for (const { from, to } of constellation.segments) {
       const a = project(from.altitude, from.azimuth);
       const b = project(to.altitude, to.azimuth);
       figures.append(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
@@ -89,15 +92,8 @@ export function buildSkyChart(date, latitude, longitude) {
 
   // Asterisms spanning several constellations get their own dashed treatment.
   const asterisms = el("g", { class: "sky-asterisms" });
-  const jd = toJulianDay(date);
-  for (const asterism of ASTERISMS) {
-    const points = asterism.stars
-      .map(([bayer, con]) => findByBayer(bayer, con))
-      .filter(Boolean)
-      .map((star) => starPosition(star, jd, latitude, longitude));
-
-    if (points.length < 2 || points.some((p) => p.altitude <= 0)) continue;
-
+  for (const asterism of tonight.filter((a) => a.asterism)) {
+    const points = asterism.points;
     const sequence = asterism.closed ? [...points, points[0]] : points;
     for (let i = 0; i < sequence.length - 1; i++) {
       const a = project(sequence[i].altitude, sequence[i].azimuth);
@@ -130,12 +126,46 @@ export function buildSkyChart(date, latitude, longitude) {
   return { svg, count: stars.length };
 }
 
-// The constellations worth telling someone to look for right now.
+// The figures worth telling someone to look for right now — and, because the
+// chart draws from this same list, exactly the ones drawn.
+//
+// These used to be two independent judgements that happened to sit next to
+// each other. The chart dropped any segment with an end below the horizon, so
+// a figure could end up with nothing drawn at all; the list asked a different
+// question entirely, whether most of the stars were up and the highest cleared
+// ten degrees. Nothing tied them together, so the panel named figures that
+// were not on the chart and drew fragments it never named. Requiring at least
+// one drawable segment is what closes it: a figure is listed only if you can
+// actually see something of it up there.
 export function tonightsConstellations(date, latitude, longitude) {
-  return CONSTELLATIONS.map((constellation) => ({
-    ...constellation,
-    ...constellationVisibility(constellation, date, latitude, longitude),
-  }))
-    .filter((c) => c.visible)
-    .sort((a, b) => b.highest - a.highest);
+  const named = CONSTELLATIONS.map((constellation) => {
+    const segments = figureSegments(constellation, date, latitude, longitude);
+    return {
+      ...constellation,
+      ...constellationVisibility(constellation, date, latitude, longitude),
+      segments,
+      partial: segments.length < constellation.lines.length,
+    };
+  }).filter((c) => c.visible && c.segments.length > 0);
+
+  // Asterisms are drawn too, so they belong in the list for the same reason.
+  // They are all-or-nothing: the figure only means anything whole.
+  const jd = toJulianDay(date);
+  const modern = ASTERISMS.map((asterism) => {
+    const points = asterism.stars
+      .map(([bayer, con]) => findByBayer(bayer, con))
+      .filter(Boolean)
+      .map((star) => starPosition(star, jd, latitude, longitude));
+
+    const complete = points.length === asterism.stars.length && points.every((p) => p.altitude > 0);
+    return {
+      ...asterism,
+      asterism: true,
+      points: complete ? points : [],
+      highest: points.reduce((max, p) => Math.max(max, p.altitude), -90),
+      partial: false,
+    };
+  }).filter((a) => a.points.length > 0);
+
+  return [...named, ...modern].sort((a, b) => b.highest - a.highest);
 }

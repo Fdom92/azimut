@@ -64,6 +64,7 @@ import { describe as describeWaypoint, sortedByDistance } from "../public/js/mod
 import { allStars, findByBayer } from "../public/js/data/stars.js";
 import { CONSTELLATIONS, ASTERISMS } from "../public/js/data/constellations.js";
 import { MYTHS, mythFor } from "../public/js/data/constellation-myths.js";
+import { tonightsConstellations, buildSkyChart } from "../public/js/modules/skyChart.js";
 import {
   TECHNIQUES,
   HAND_ANGLES,
@@ -1556,6 +1557,87 @@ test("medir a ojo: cada método dice qué mide, cómo, por qué y con qué error
   }
   const ids = TECHNIQUES.map((t) => t.id);
   assertEqual(new Set(ids).size, ids.length, "id de método duplicado");
+});
+
+// The panel named figures the chart had not drawn, and drew fragments it never
+// named, because "worth naming" and "has a drawable segment" were separate
+// judgements sitting next to each other. Now one list feeds both, and this
+// pins that down across a year and several latitudes.
+test("cielo: todo lo que se lista tiene algo dibujable", () => {
+  const places = [
+    ["Madrid", 40.4168, -3.7038],
+    ["A Coruña", 43.3623, -8.4115],
+    ["Canarias", 28.1, -15.4],
+  ];
+  const hours = [0, 4, 9, 14, 19, 22];
+  const months = [0, 3, 6, 9];
+
+  let listed = 0;
+  for (const [, lat, lon] of places) {
+    for (const month of months) {
+      for (const hour of hours) {
+        const when = new Date(Date.UTC(2026, month, 15, hour, 0, 0));
+        for (const figure of tonightsConstellations(when, lat, lon)) {
+          listed++;
+          const drawable = figure.asterism
+            ? figure.points.length
+            : figure.segments.length;
+          assert(
+            drawable > 0,
+            `${figure.name} listada sin nada que dibujar (mes ${month}, ${hour}h, lat ${lat})`
+          );
+          assert(
+            Number.isFinite(figure.highest),
+            `${figure.name}: altura no finita`
+          );
+        }
+      }
+    }
+  }
+  assert(listed > 100, `solo ${listed} figuras listadas en todo el barrido`);
+});
+
+// The direction that actually broke. The chart drew any segment whose ends
+// were both up, while the list asked whether most of the figure was up and
+// clear of the haze — so fragments of unlisted constellations appeared on the
+// dome with no card to explain them: 56 times across a year of sample hours.
+// The test above (listed implies drawable) passed even then, which is why it
+// alone is not enough. This one needs a DOM, so Node skips it and the browser
+// run carries it.
+if (typeof document !== "undefined") {
+  test("cielo: no se dibuja ninguna figura que no esté en la lista", () => {
+    for (const [lat, lon] of [[40.4168, -3.7038], [43.3623, -8.4115], [28.1, -15.4]]) {
+      for (const month of [0, 3, 6, 9]) {
+        for (const hour of [0, 4, 9, 14, 19, 22]) {
+          const when = new Date(Date.UTC(2026, month, 15, hour, 0, 0));
+          const listed = tonightsConstellations(when, lat, lon);
+          const { svg } = buildSkyChart(when, lat, lon);
+
+          const drawnFigures = svg.querySelectorAll(".sky-figures line").length;
+          const expected = listed
+            .filter((f) => !f.asterism)
+            .reduce((sum, f) => sum + f.segments.length, 0);
+
+          assertEqual(
+            drawnFigures,
+            expected,
+            `lat ${lat}, mes ${month + 1}, ${hour}h: el mapa dibuja ${drawnFigures} segmentos y la lista justifica ${expected}`
+          );
+        }
+      }
+    }
+  });
+}
+
+test("cielo: una figura a medias se marca como tal", () => {
+  // Somewhere, at some hour, a figure is straddling the horizon — otherwise
+  // the `partial` flag is never exercised and the badge is dead code.
+  let sawPartial = false;
+  for (let hour = 0; hour < 24 && !sawPartial; hour++) {
+    const when = new Date(Date.UTC(2026, 6, 15, hour, 0, 0));
+    sawPartial = tonightsConstellations(when, 40.4168, -3.7038).some((f) => f.partial);
+  }
+  assert(sawPartial, "ninguna figura salió parcial en 24 horas: revisa el flag");
 });
 
 test("myths: every drawn figure has one, and every myth has a figure", () => {
