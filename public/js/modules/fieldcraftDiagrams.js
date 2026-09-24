@@ -34,63 +34,57 @@ function frame(width, height, title) {
 // drawn as a wedge from the eye. Drawn to scale against each other: the fist
 // wedge really is ten times the little finger.
 export function handAngles() {
-  const svg = frame(320, 200, "El ángulo que cubre cada gesto con el brazo estirado");
-
-  const eyeX = 34;
-  const eyeY = 100;
-  const armLength = 210;
-
-  svg.append(el("circle", { cx: eyeX, cy: eyeY, r: 9, class: "diagram-eye" }));
-  svg.append(el("circle", { cx: eyeX + 2, cy: eyeY, r: 3.5, class: "diagram-pupil" }));
-
-  // The arm, as a straight line out to where the hand is held.
-  svg.append(
-    el("line", {
-      x1: eyeX + 12,
-      y1: eyeY,
-      x2: eyeX + armLength,
-      y2: eyeY,
-      class: "diagram-arrow",
-      "stroke-dasharray": "3 4",
-    })
-  );
-  svg.append(label("brazo estirado", eyeX + 110, eyeY + 18, "diagram-caption"));
-
-  // One wedge per gesture, opening from the eye. Angles are exaggerated in
-  // neither direction — they are drawn at their true relative size.
+  // One row per gesture. Sharing a single apex was the obvious drawing and the
+  // wrong one: the wedges nest, so the widest simply covers the rest and the
+  // result is one black triangle that says nothing. Separate rows keep all
+  // four visible and still let you compare them — the fist really is drawn ten
+  // times the little finger.
   const gestures = [
-    { deg: 20, y: 30, text: "mano abierta · 20°" },
-    { deg: 10, y: 60, text: "puño · 10°" },
-    { deg: 5, y: 82, text: "tres dedos · 5°" },
-    { deg: 1, y: 96, text: "meñique · 1°" },
+    { deg: 20, text: "mano abierta · 20°" },
+    { deg: 10, text: "puño · 10°" },
+    { deg: 5, text: "tres dedos · 5°" },
+    { deg: 1, text: "meñique · 1°" },
   ];
 
-  const scale = 2.6; // pixels of half-height per degree, at the hand
-  for (const g of gestures) {
+  const rowHeight = 46;
+  const top = 26;
+  const svg = frame(320, top + gestures.length * rowHeight + 8,
+    "El ángulo que cubre cada gesto con el brazo estirado");
+
+  svg.append(label("con el brazo estirado del todo", 160, 16, "diagram-caption"));
+
+  const eyeX = 26;
+  const handX = 196;
+  const scale = 1.9; // pixels of half-height per degree, at the hand
+
+  gestures.forEach((g, i) => {
+    const y = top + i * rowHeight + rowHeight / 2;
     const half = (g.deg / 2) * scale;
-    const x = eyeX + armLength;
-    const wedge = el("path", {
-      d: `M ${eyeX} ${eyeY} L ${x} ${eyeY - half} L ${x} ${eyeY + half} Z`,
-      class: "diagram-band",
-    });
-    svg.append(wedge);
+
+    svg.append(el("circle", { cx: eyeX, cy: y, r: 7, class: "diagram-eye" }));
+    svg.append(el("circle", { cx: eyeX + 1.5, cy: y, r: 2.8, class: "diagram-pupil" }));
+
+    svg.append(
+      el("path", {
+        d: `M ${eyeX + 8} ${y} L ${handX} ${y - half} L ${handX} ${y + half} Z`,
+        class: "diagram-band",
+      })
+    );
+
+    // A minimum stroke so the 1° row is still a visible mark rather than
+    // nothing at all — it is small, not absent.
     svg.append(
       el("line", {
-        x1: x,
-        y1: eyeY - half,
-        x2: x,
-        y2: eyeY + half,
+        x1: handX,
+        y1: y - Math.max(half, 1.2),
+        x2: handX,
+        y2: y + Math.max(half, 1.2),
         class: "diagram-hand",
       })
     );
-  }
 
-  // Labels stacked below, so the wedges stay readable.
-  let ly = 148;
-  for (const g of gestures) {
-    svg.append(label(g.text, 160, ly, "diagram-caption"));
-    ly += 15;
-  }
+    svg.append(label(g.text, handX + 12, y + 4, "diagram-caption", "start"));
+  });
 
   return svg;
 }
