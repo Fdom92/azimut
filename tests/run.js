@@ -1737,6 +1737,52 @@ if (repoFiles) {
   // Not a knot test, but it lives here because it needs the same file access.
   // cache.addAll() is all-or-nothing: one missing entry rejects the install
   // and the app silently keeps serving whatever the previous worker cached.
+  // A crawler has no base URL to resolve a relative path against, so a
+  // preview image written as "icons/social-card.png" works in the browser and
+  // yields a preview with no image. Nothing in the app exercises these tags,
+  // so without a test the only way to find a mistake is to post the link.
+  test("previsualización: las etiquetas de enlace están y apuntan a algo real", () => {
+    const html = repoFiles.readFileSync(new URL("index.html", publicDir), "utf8");
+    const meta = (attr, name) => {
+      const re = new RegExp(`<meta\\s+${attr}="${name}"\\s+content="([^"]*)"`, "i");
+      return (html.match(re) || [])[1] ?? null;
+    };
+
+    for (const [attr, name] of [
+      ["property", "og:title"],
+      ["property", "og:description"],
+      ["property", "og:url"],
+      ["property", "og:image"],
+      ["name", "twitter:card"],
+      ["name", "twitter:image"],
+    ]) {
+      const value = meta(attr, name);
+      assert(value && value.trim().length > 0, `falta ${name}`);
+    }
+
+    for (const name of ["og:image", "og:url"]) {
+      const value = meta(name === "og:url" ? "property" : "property", name);
+      assert(
+        value.startsWith("https://"),
+        `${name} debe ser absoluta para que un crawler la resuelva: "${value}"`
+      );
+    }
+
+    const image = meta("property", "og:image");
+    const file = image.replace("https://fdom92.github.io/azimut/", "");
+    assert(
+      repoFiles.existsSync(new URL(file, publicDir)),
+      `og:image apunta a "${file}" y ese fichero no está en el repo`
+    );
+
+    assertEqual(
+      meta("name", "twitter:image"),
+      image,
+      "twitter:image y og:image deberían ser la misma tarjeta"
+    );
+    assertEqual(meta("name", "twitter:card"), "summary_large_image");
+  });
+
   test("service worker: every precached asset exists", () => {
     const sw = repoFiles.readFileSync(new URL("sw.js", publicDir), "utf8");
     const list = sw.slice(sw.indexOf("const ASSETS"), sw.indexOf("];"));

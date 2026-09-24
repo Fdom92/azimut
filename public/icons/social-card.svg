@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Azimut: herramientas de monte que funcionan sin cobertura">
+  <!-- Source for social-card.png, kept so the card can be regenerated rather
+       than re-drawn from scratch. Same idiom as Cerberus's: dark ground, a rule
+       of the accent colour along the top, the app's own mark, then the name and
+       three lines that answer what it is, what is in it, and what it costs.
+
+       Rendered at 1200x630 — the size link previews crop to. Text sits well
+       inside the edges because some clients trim the frame. -->
+  <rect width="1200" height="630" fill="#0d1512"/>
+  <rect width="1200" height="8" fill="#6fcf97"/>
+
+  <!-- The compass from icons/icon.svg, without its rounded plate. -->
+  <g transform="translate(497 62) scale(0.402)">
+    <!-- Lighter than the ring in icon.svg. That one sits on a pale rounded
+         plate; here it is dark-on-dark at four times the size, and the border
+         colour simply vanished. -->
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#8fa89a" stroke-width="16"/>
+    <path d="M256 96 L256 128 M256 384 L256 416 M96 256 L128 256 M384 256 L416 256"
+          stroke="#8fa89a" stroke-width="18" stroke-linecap="round"/>
+    <path d="M256 130 L300 300 L256 268 L212 300 Z" fill="#6fcf97"/>
+  </g>
+
+  <g font-family="Helvetica Neue, Helvetica, Arial, sans-serif" text-anchor="middle">
+    <text x="600" y="368" fill="#e4ede7" font-size="92" font-weight="700" letter-spacing="14">AZIMUT</text>
+    <text x="600" y="432" fill="#e4ede7" font-size="34">Sin cobertura, sin cuenta, sin salir del dispositivo.</text>
+    <text x="600" y="488" fill="#8fa89a" font-size="27">Sol · Orientación · Estrellas · Nudos · Naturaleza · Socorro</text>
+    <text x="600" y="544" fill="#6fcf97" font-size="27">Todo se calcula en tu móvil · Funciona en el monte · Gratis</text>
+  </g>
+</svg>
