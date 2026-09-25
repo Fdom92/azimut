@@ -1013,3 +1013,52 @@ button:disabled { opacity: 0.45; cursor: default; }
   color: var(--muted);
   font-size: 13px;
 }
+
+/* Constellation names on the dome. Without them the chart and the list could
+   agree perfectly and still be impossible to match up by eye — which is no use
+   to the only person who needs the panel. */
+.sky-chart .sky-figure-name {
+  fill: #93a9d4;
+  font-size: 15px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: #0b1220;
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* Picking one figure pushes the others back rather than hiding them, so you
+   still see it in the context of the sky you are looking at. */
+.sky-chart.has-pick .sky-figure { opacity: 0.18; }
+.sky-chart.has-pick .sky-figure.picked { opacity: 1; }
+
+.sky-chart .sky-figure.picked line {
+  stroke: var(--accent);
+  stroke-width: 2.6;
+  opacity: 1;
+}
+
+.sky-chart .sky-figure.picked .sky-figure-name {
+  fill: var(--accent);
+  font-size: 17px;
+}
+
+.pick-figure {
+  margin-top: var(--gap-sm);
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pick-figure:hover { border-color: var(--accent); }
+
+.pick-figure[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}

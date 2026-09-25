@@ -1623,6 +1623,27 @@ if (typeof document !== "undefined") {
             expected,
             `lat ${lat}, mes ${month + 1}, ${hour}h: el mapa dibuja ${drawnFigures} segmentos y la lista justifica ${expected}`
           );
+
+          // Agreeing as sets is not enough to be usable: with nothing named on
+          // the dome, a card and a shape cannot be matched up by eye, which is
+          // what the panel is for.
+          const drawnNames = [...svg.querySelectorAll(".sky-figure-name")].map(
+            (t) => t.textContent
+          );
+          const listedNames = listed.filter((f) => !f.asterism).map((f) => f.name);
+          assertEqual(
+            [...drawnNames].sort().join("|"),
+            [...listedNames].sort().join("|"),
+            `lat ${lat}, mes ${month + 1}, ${hour}h: los nombres del mapa no son los de la lista`
+          );
+
+          // Each figure is tagged so its card can light it up.
+          for (const group of svg.querySelectorAll(".sky-figures .sky-figure")) {
+            assert(
+              group.dataset.con,
+              "una figura sin data-con no puede resaltarse desde su tarjeta"
+            );
+          }
         }
       }
     }

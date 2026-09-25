@@ -80,26 +80,58 @@ export function buildSkyChart(date, latitude, longitude) {
   // below the chart, so the two can never disagree about what is up there.
   const tonight = tonightsConstellations(date, latitude, longitude);
 
+  // Each figure is its own group, tagged with its code, and carries its name.
+  // Matching sets was only half the problem the panel had: with nothing
+  // labelled, a card saying "Boyero" and a shape on the dome could not be put
+  // together by anyone who did not already know the constellation — which is
+  // precisely the person the panel is for. The group tag also lets a card
+  // light up its own figure when tapped.
   const figures = el("g", { class: "sky-figures" });
   for (const constellation of tonight.filter((c) => !c.asterism)) {
+    const group = el("g", { class: "sky-figure", "data-con": constellation.con });
+
+    let sumX = 0;
+    let sumY = 0;
+    let points = 0;
+
     for (const { from, to } of constellation.segments) {
       const a = project(from.altitude, from.azimuth);
       const b = project(to.altitude, to.azimuth);
-      figures.append(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+      group.append(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+      sumX += a.x + b.x;
+      sumY += a.y + b.y;
+      points += 2;
     }
+
+    // Placed at the middle of what is actually drawn, not of the whole figure:
+    // a half-risen constellation would otherwise be named off the dome.
+    if (points > 0) {
+      const name = el("text", {
+        x: sumX / points,
+        y: sumY / points,
+        class: "sky-figure-name",
+        "text-anchor": "middle",
+      });
+      name.textContent = constellation.name;
+      group.append(name);
+    }
+
+    figures.append(group);
   }
   svg.append(figures);
 
   // Asterisms spanning several constellations get their own dashed treatment.
   const asterisms = el("g", { class: "sky-asterisms" });
   for (const asterism of tonight.filter((a) => a.asterism)) {
+    const group = el("g", { class: "sky-figure", "data-con": asterism.name });
     const points = asterism.points;
     const sequence = asterism.closed ? [...points, points[0]] : points;
     for (let i = 0; i < sequence.length - 1; i++) {
       const a = project(sequence[i].altitude, sequence[i].azimuth);
       const b = project(sequence[i + 1].altitude, sequence[i + 1].azimuth);
-      asterisms.append(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
+      group.append(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y }));
     }
+    asterisms.append(group);
   }
   svg.append(asterisms);
 

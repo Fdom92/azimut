@@ -1635,6 +1635,39 @@ function renderSky() {
     const card = document.createElement("div");
     card.className = "card";
 
+    // Naming a figure on the chart only helps if you can find it, so each card
+    // can light its own shape and dim the rest. This is a button of its own
+    // rather than the whole card being clickable: the card already contains a
+    // <details>, and nesting one control inside another breaks both.
+    const key = constellation.asterism ? constellation.name : constellation.con;
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "pick-figure";
+    pick.textContent = "Señalar en el mapa";
+    pick.setAttribute("aria-pressed", "false");
+
+    pick.addEventListener("click", () => {
+      const chart = skyMount.querySelector("svg.sky-chart");
+      if (!chart) return;
+
+      const turningOff = pick.getAttribute("aria-pressed") === "true";
+      for (const other of skyConstellations.querySelectorAll(".pick-figure")) {
+        other.setAttribute("aria-pressed", "false");
+        other.textContent = "Señalar en el mapa";
+      }
+
+      chart.classList.toggle("has-pick", !turningOff);
+      for (const figure of chart.querySelectorAll(".sky-figure")) {
+        figure.classList.toggle("picked", !turningOff && figure.dataset.con === key);
+      }
+
+      if (!turningOff) {
+        pick.setAttribute("aria-pressed", "true");
+        pick.textContent = "Quitar del mapa";
+        chart.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    });
+
     const head = document.createElement("div");
     head.className = "cloud-head";
 
@@ -1685,6 +1718,7 @@ function renderSky() {
       card.append(fold);
     }
 
+    card.append(pick);
     skyConstellations.append(card);
   }
 }

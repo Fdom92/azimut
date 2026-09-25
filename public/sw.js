@@ -1,7 +1,7 @@
 // Precache the whole app. It is small and entirely static, so there is no
 // cache-versus-network strategy to get wrong: cache first, network never.
 
-const CACHE = "azimut-v28";
+const CACHE = "azimut-v29";
 
 const ASSETS = [
   ".",
