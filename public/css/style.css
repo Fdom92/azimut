@@ -985,9 +985,16 @@ button:disabled { opacity: 0.45; cursor: default; }
 
 .sky-chart .sky-star { fill: #f4f7ff; }
 
+/* Star names sit white, constellation names blue. They were both pale blue
+   and near enough in size to be read as one kind of label — the first thing
+   anyone asked about the chart was which was which. */
 .sky-chart .sky-label {
-  fill: #cfd9ee;
+  fill: #eef3fb;
   font-size: 13px;
+  paint-order: stroke;
+  stroke: #0b1220;
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 /* The dome is its own night-coloured surface in both themes: a white sky
@@ -1062,3 +1069,19 @@ button:disabled { opacity: 0.45; cursor: default; }
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Two samples in the panel's explainer card, drawn in the same colours the
+   chart uses so the legend cannot drift from the thing it describes. */
+.sky-legend { margin-top: var(--gap-sm); }
+
+.sky-legend .legend-star,
+.sky-legend .legend-figure {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #0b1220;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sky-legend .legend-star { color: #eef3fb; }
+.sky-legend .legend-figure { color: #93a9d4; }

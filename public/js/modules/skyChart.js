@@ -11,6 +11,7 @@
 import { visibleStars, figureSegments, constellationVisibility } from "../astro/stars.js";
 import { CONSTELLATIONS, ASTERISMS } from "../data/constellations.js";
 import { findByBayer } from "../data/stars.js";
+import { spanishStarName } from "../data/star-names.js";
 import { starPosition } from "../astro/stars.js";
 import { toJulianDay } from "../astro/julian.js";
 
@@ -150,7 +151,7 @@ export function buildSkyChart(date, latitude, longitude) {
   for (const star of stars.filter((s) => s.name && s.mag <= 1.6)) {
     const at = project(star.altitude, star.azimuth);
     const text = el("text", { x: at.x + 9, y: at.y + 4, class: "sky-label" });
-    text.textContent = star.name;
+    text.textContent = spanishStarName(star.name);
     labels.append(text);
   }
   svg.append(labels);

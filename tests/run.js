@@ -64,6 +64,8 @@ import { describe as describeWaypoint, sortedByDistance } from "../public/js/mod
 import { allStars, findByBayer } from "../public/js/data/stars.js";
 import { CONSTELLATIONS, ASTERISMS } from "../public/js/data/constellations.js";
 import { MYTHS, mythFor } from "../public/js/data/constellation-myths.js";
+import { TRANSLATED, spanishStarName } from "../public/js/data/star-names.js";
+import { STARS } from "../public/js/data/stars.js";
 import { tonightsConstellations, buildSkyChart } from "../public/js/modules/skyChart.js";
 import {
   TECHNIQUES,
@@ -1659,6 +1661,38 @@ test("cielo: una figura a medias se marca como tal", () => {
     sawPartial = tonightsConstellations(when, 40.4168, -3.7038).some((f) => f.partial);
   }
   assert(sawPartial, "ninguna figura salió parcial en 24 horas: revisa el flag");
+});
+
+// A typo in a key here fails silently: the lookup misses and the English name
+// goes on the chart, which is exactly the state this file exists to fix.
+test("nombres: cada traducción corresponde a una estrella del catálogo", () => {
+  const catalogue = new Set(STARS.map((s) => s[3]).filter(Boolean));
+  for (const english of Object.keys(TRANSLATED)) {
+    assert(
+      catalogue.has(english),
+      `"${english}" no está en el catálogo: la traducción nunca se aplicaría`
+    );
+  }
+});
+
+test("nombres: una estrella sin traducción conserva la suya", () => {
+  assertEqual(spanishStarName("Vega"), "Vega");
+  assertEqual(spanishStarName("Sirius"), "Sirio");
+  assertEqual(spanishStarName("Arcturus"), "Arturo");
+});
+
+// The chart labels the brightest named stars; the stories name them in
+// Spanish. If those two disagree the panel contradicts itself on one screen.
+test("nombres: las estrellas que rotula el mapa salen en español", () => {
+  const labelled = STARS.filter((s) => s[3] && s[2] <= 1.6).map((s) => s[3]);
+  const conNombreIngles = labelled
+    .map(spanishStarName)
+    .filter((n) => /^(Sirius|Arcturus|Regulus|Procyon|Aldebaran|Spica|Pollux|Canopus)$/.test(n));
+  assertEqual(
+    conNombreIngles.length,
+    0,
+    `sin traducir: ${conNombreIngles.join(", ")}`
+  );
 });
 
 test("myths: every drawn figure has one, and every myth has a figure", () => {
